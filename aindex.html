@@ -364,7 +364,30 @@
             } catch(e) { }
         }
 
-        // --- ÖĞRETİCİ SİSTEMİ ---
+        function updateUI() {
+            uiMoney.innerText = Math.floor(state.money); 
+            if (state.money < 0) { uiMoney.parentElement.classList.remove('text-emerald-400'); uiMoney.parentElement.classList.add('text-red-500'); } 
+            else { uiMoney.parentElement.classList.remove('text-red-500'); uiMoney.parentElement.classList.add('text-emerald-400'); }
+
+            uiDay.innerText = state.day;
+            uiTeams.innerText = state.teamsAvailable; uiMaxTeams.innerText = state.maxTeams;
+            STRAIN_ORDER.forEach(s => { uiStocks[s].innerText = state.stock[s]; });
+            
+            let income = 0, drain = 0;
+            state.nodes.forEach(n => {
+                if (n.qState === 2) drain += 20; else if (n.qState === 1) drain += 10; else if (n.infectedStrains.length === 0) income += 5;
+            });
+            let net = income - drain;
+            uiNet.innerText = (net >= 0 ? "+" : "") + net;
+            uiNet.className = "text-xs sm:text-sm font-bold " + (net >= 0 ? "text-emerald-400" : "text-red-500");
+            
+            if(state.maxTeams >= 6) { btnBuyTeam.innerText = "MAKS."; btnBuyTeam.disabled = true; btnBuyTeam.classList.add('opacity-50'); } 
+            else { btnBuyTeam.innerText = `₺${state.teamCost}`; }
+
+            if(state.autoProdLevel >= 2) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); } 
+            else if(state.autoProdLevel === 1) { btnBuyAutoProd.innerText = `₺12000`; }
+        }
+
         function updateTutorialUI() {
             const panel = document.getElementById('tutorial-panel'), title = document.getElementById('tutorial-title'), text = document.getElementById('tutorial-text'), btn = document.getElementById('tutorial-btn');
             if(!panel) return;
@@ -420,7 +443,19 @@
 
         window.produce = function(strain, isAuto = false) {
             if (!gameStarted || state.isGameOver) return;
-            if (tutorialMode && tutorialStep === 2 && strain !== 'Tip-O') { addFloatingText("Öğreticide sadece Tip-O üretin!", canvas.width/2, 120, '#ef4444'); return; }
+            
+            // KATI ÖĞRETİCİ KİLİDİ:
+            if (tutorialMode) {
+                if (tutorialStep !== 2) { 
+                    addFloatingText("Şu an aşı üretemezsin!", canvas.width/2, 120, '#ef4444'); 
+                    return; 
+                }
+                if (strain !== 'Tip-O') { 
+                    addFloatingText("Öğreticide sadece Tip-O üret!", canvas.width/2, 120, '#ef4444'); 
+                    return; 
+                }
+            }
+
             if ((state.money - 100) >= -5000 && state.producingTimer < 0) {
                 state.money -= 100; state.producingStrain = strain; state.producingTimer = 3.0;
                 produceBtns.forEach(b => b.disabled = true);
@@ -428,9 +463,24 @@
             }
         };
 
-        btnUpgrades.onclick = () => { upgradeModal.classList.remove('hidden'); upgradeModal.classList.add('flex'); };
-        btnCloseUpgrade.onclick = () => { upgradeModal.classList.add('hidden'); upgradeModal.classList.remove('flex'); };
+        btnUpgrades.onclick = () => { 
+            // KATI ÖĞRETİCİ KİLİDİ: Sadece 3. adımda açılabilir
+            if (tutorialMode && tutorialStep !== 3) {
+                addFloatingText("Market şu an kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); 
+                return;
+            }
+            upgradeModal.classList.remove('hidden'); upgradeModal.classList.add('flex'); 
+        };
 
+        btnCloseUpgrade.onclick = () => { 
+            // KATI ÖĞRETİCİ KİLİDİ: 3. adımda ekibi almadan marketten çıkmayı engeller
+            if (tutorialMode && tutorialStep === 3) {
+                addFloatingText("Önce Yeni Ekip Al!", canvas.width/2, canvas.height/2, '#ef4444');
+                return;
+            }
+            upgradeModal.classList.add('hidden'); upgradeModal.classList.remove('flex'); 
+        };
+        
         const teamLimit = 6;
         btnBuyTeam.onclick = () => {
             if(state.maxTeams < teamLimit && (state.money - state.teamCost) >= -5000) {
@@ -445,6 +495,8 @@
         const autoProdCosts = [5000, 12000];
         const autoProdLimits = [3, 6];
         btnBuyAutoProd.onclick = () => {
+            if(tutorialMode) { addFloatingText("Öğreticide kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); return; }
+            
             if(state.autoProdLevel < 2) {
                 let cost = autoProdCosts[state.autoProdLevel];
                 if ((state.money - cost) >= -5000) {
@@ -453,7 +505,7 @@
                     state.autoProdLimit = autoProdLimits[state.autoProdLevel];
                     state.autoProdLevel++;
                     
-                    if (state.disasterPhase === 0) { state.disasterPhase = 1; state.disasterDelayTimer = 30.0; }
+                    if (state.disasterPhase === 0) { state.disasterPhase = 1; state.disasterDelayTimer = 10.0; } 
                     addFloatingText(`YZ Üretim Seviye ${state.autoProdLevel}!`, canvas.width/2, canvas.height/2, '#3b82f6');
                     updateUI();
                 }
@@ -461,9 +513,11 @@
         };
 
         btnBuyAutoVac.onclick = () => {
+            if(tutorialMode) { addFloatingText("Öğreticide kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); return; }
+            
             if(!state.autoVaccine && (state.money - 10000) >= -5000) {
                 state.money -= 10000; state.autoVaccine = true;
-                state.disasterPhase = 2; state.disasterTimer = 30.0 + Math.random() * 20.0;
+                state.disasterPhase = 2; state.disasterTimer = 20.0 + Math.random() * 10.0; 
                 btnBuyAutoVac.innerText = "AKTİF"; btnBuyAutoVac.disabled = true; btnBuyAutoVac.classList.add('opacity-50');
                 addFloatingText("YZ Filyasyon Aktif!", canvas.width/2, canvas.height/2, '#a855f7'); updateUI();
             }
@@ -472,8 +526,15 @@
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInteraction(e); }, {passive: false});
         canvas.addEventListener('mousedown', handleInteraction);
 
-        function handleInteraction(e) {
+                function handleInteraction(e) {
             if(!gameStarted || state.isGameOver) return;
+            
+            // KATI ÖĞRETİCİ KİLİDİ: 4. adımdan önce haritaya tıklama engeli
+            if(tutorialMode && tutorialStep < 4) {
+                addFloatingText("Haritaya müdahale için bekle!", e.clientX, e.clientY, '#ef4444'); 
+                return;
+            }
+
             if(e.target.closest('#ui-layer') || e.target.closest('.modal')) return;
             let cx = e.clientX || (e.touches && e.touches[0].clientX), cy = e.clientY || (e.touches && e.touches[0].clientY);
             let clickedNode = state.nodes.find(n => Math.hypot(cx - n.x, cy - n.y) <= n.radius + 20);
@@ -514,33 +575,6 @@
         function addFloatingText(text, x, y, color) { state.particles.push({ type: 'text', text, x, y, color, life: 1.0, maxLife: 1.0, velY: -20 }); }
         function spawnExplosion(x, y, color) { for(let i=0; i<6; i++) state.particles.push({ type: 'spark', x, y, vx: (Math.random()-0.5)*80, vy: (Math.random()-0.5)*80, life: 0.4, maxLife: 0.4, color }); }
 
-        function updateUI() {
-            uiMoney.innerText = Math.floor(state.money); 
-            if (state.money < 0) { uiMoney.parentElement.classList.remove('text-emerald-400'); uiMoney.parentElement.classList.add('text-red-500'); } 
-            else { uiMoney.parentElement.classList.remove('text-red-500'); uiMoney.parentElement.classList.add('text-emerald-400'); }
-
-            uiDay.innerText = state.day;
-            uiTeams.innerText = state.teamsAvailable; uiMaxTeams.innerText = state.maxTeams;
-            STRAIN_ORDER.forEach(s => { uiStocks[s].innerText = state.stock[s]; });
-            
-            let income = 0, drain = 0;
-            state.nodes.forEach(n => {
-                if (n.qState === 2) drain += 20; else if (n.qState === 1) drain += 10; else if (n.infectedStrains.length === 0) income += 5;
-            });
-            let net = income - drain;
-            uiNet.innerText = (net >= 0 ? "+" : "") + net;
-            uiNet.className = "text-xs sm:text-sm font-bold " + (net >= 0 ? "text-emerald-400" : "text-red-500");
-            
-            if (state.producingTimer > 0) produceBar.style.width = ((3.0 - state.producingTimer) / 3.0 * 100) + '%';
-            else produceBar.style.width = '0%';
-            
-            if(state.maxTeams >= teamLimit) { btnBuyTeam.innerText = "MAKS."; btnBuyTeam.disabled = true; btnBuyTeam.classList.add('opacity-50'); } 
-            else { btnBuyTeam.innerText = `₺${state.teamCost}`; }
-
-            if(state.autoProdLevel >= 2) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); } 
-            else if(state.autoProdLevel === 1) { btnBuyAutoProd.innerText = `₺${autoProdCosts[1]}`; }
-        }
-
         function update(dt) {
             if(!gameStarted || state.isGameOver) return;
             quarantineRot += dt;
@@ -550,7 +584,8 @@
                 if (dayTimer >= 2.0) { 
                     state.day++; dayTimer = 0; updateUI(); 
 
-                    if (state.day === 300 && state.disasterPhase === 0) {
+                    // Kural 2: 200. Gün Pasif Felaket Tetikleyicisi
+                    if (state.day === 200 && state.disasterPhase === 0) {
                         state.disasterPhase = 1;
                         state.disasterDelayTimer = 10.0;
                     }
@@ -651,12 +686,16 @@
             }
 
             if (state.producingTimer > 0) {
-                state.producingTimer -= dt; updateUI(); 
+                state.producingTimer -= dt; 
                 if (state.producingTimer <= 0) {
                     state.stock[state.producingStrain] += 3; state.producingTimer = -1;
                     produceBtns.forEach(b => b.disabled = false);
                     addFloatingText("+3 Doz", canvas.width-50, 80, STRAINS[state.producingStrain].color);
-                    updateUI(); checkTutorialProgress();
+                    produceBar.style.width = '0%';
+                    updateUI(); 
+                    checkTutorialProgress();
+                } else {
+                    produceBar.style.width = ((3.0 - state.producingTimer) / 3.0 * 100) + '%';
                 }
             }
 
@@ -664,25 +703,33 @@
                 if (n.qTimer > 0) {
                     n.qTimer -= dt;
                     if (n.qTimer <= 0) {
-                        n.qState = n.qPendingState; n.qPendingState = 0;
-                        if (n.qState === 2) {
-                            addFloatingText("MİHRAK", n.x, n.y, '#ef4444');
-                            n.connectedNodes.forEach(neighbor => {
-                                n.infectedStrains.forEach(s => neighbor.threatStrains.add(s));
-                                if (neighbor.qState === 0 && neighbor.qPendingState === 0) {
-                                    neighbor.qTimer = 1.5; neighbor.qPendingState = 1; neighbor.quarantinedBy.add(n.id);
-                                    let isImmune = n.infectedStrains.every(s => neighbor.immunity[s] > 0);
-                                    if (!isImmune) neighbor.yellowLocked = true;
-                                } else if (neighbor.qState === 1 || neighbor.qPendingState === 1) {
-                                    neighbor.quarantinedBy.add(n.id);
-                                    let isImmune = n.infectedStrains.every(s => neighbor.immunity[s] > 0);
-                                    if (!isImmune) neighbor.yellowLocked = true;
-                                }
-                            });
-                        } else if (n.qState === 1) { addFloatingText("TEDBİR", n.x, n.y+15, '#eab308'); }
-                        updateUI();
+                        // YENİ KONTROL: Eğer bekleyen durum Mihrak (2) ise ama hastalık çoktan iyileşmişse, kordonu iptal et!
+                        if (n.qPendingState === 2 && n.infectedStrains.length === 0) {
+                            n.qPendingState = 0;
+                        } else {
+                            n.qState = n.qPendingState; n.qPendingState = 0;
+                            if (n.qState === 2) {
+                                addFloatingText("MİHRAK", n.x, n.y, '#ef4444');
+                                n.connectedNodes.forEach(neighbor => {
+                                    n.infectedStrains.forEach(s => neighbor.threatStrains.add(s));
+                                    if (neighbor.qState === 0 && neighbor.qPendingState === 0) {
+                                        neighbor.qTimer = 1.5; neighbor.qPendingState = 1; neighbor.quarantinedBy.add(n.id);
+                                        let isImmune = n.infectedStrains.every(s => neighbor.immunity[s] > 0);
+                                        if (!isImmune) neighbor.yellowLocked = true;
+                                    } else if (neighbor.qState === 1 || neighbor.qPendingState === 1) {
+                                        neighbor.quarantinedBy.add(n.id);
+                                        let isImmune = n.infectedStrains.every(s => neighbor.immunity[s] > 0);
+                                        if (!isImmune) neighbor.yellowLocked = true;
+                                    }
+                                });
+                            } else if (n.qState === 1) { 
+                                addFloatingText("TEDBİR", n.x, n.y+15, '#eab308'); 
+                            }
+                            updateUI();
+                        }
                     }
                 }
+
 
                 if (n.vaccinatingTimer > 0) {
                     n.vaccinatingTimer -= dt;
@@ -691,6 +738,9 @@
                         let vStrain = n.vaccinatingStrain;
                         n.infectedStrains = n.infectedStrains.filter(s => s !== vStrain);
                         n.immunity[vStrain] = 40.0; 
+                        
+                        // Kural 1: Aşılama tamamlandığında korunduğu hastalık, tehdit listesinden tam olarak temizlenir.
+                        n.threatStrains.delete(vStrain); 
                         
                         if (n.qState === 1) {
                             let isFullyImmune = Array.from(n.threatStrains).every(s => n.immunity[s] > 0);
