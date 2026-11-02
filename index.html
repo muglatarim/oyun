@@ -123,7 +123,7 @@
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('Tip-A')">ÜRET</button>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-cyan-500 mb-0.5">Asia 1:<span id="stk-as" class="text-white ml-0.5">0</span></span>
+                            <span class="text-[9px] font-bold text-cyan-500 mb-0.5">Asia-1:<span id="stk-as" class="text-white ml-0.5">0</span></span>
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('Asia-1')">ÜRET</button>
                         </div>
                         <div class="flex flex-col items-center">
@@ -209,7 +209,7 @@
                 <div class="bg-slate-800 p-3 rounded-xl border border-slate-600 flex justify-between items-center">
                     <div>
                         <h3 class="font-bold text-blue-400 text-sm">Otonom Aşı Üretimi</h3>
-                        <p class="text-[10px] text-slate-400">Seçili (uygulanan) aşıyı seviyeye göre limitin altına düştüğünde otomatik üretir. (3 doz - 6 doz)</p>
+                        <p class="text-[10px] text-slate-400">Seçili (uygulanan) aşıyı seviyeye göre limitin altına düştüğünde otomatik üretir. (3 doz - 6 doz - 9 doz)</p>
                     </div>
                     <button id="btn-buy-auto-prod" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs shadow-lg active:scale-95 shrink-0 transition">
                         ₺5000
@@ -385,7 +385,7 @@
             else { btnBuyTeam.innerText = `₺${state.teamCost}`; }
 
             if(state.autoProdLevel >= 2) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); } 
-            else if(state.autoProdLevel === 1) { btnBuyAutoProd.innerText = `₺8000`; }
+            else if(state.autoProdLevel === 1) { btnBuyAutoProd.innerText = `₺10000`; }
         }
 
         function updateTutorialUI() {
@@ -493,8 +493,8 @@
             }
         };
 
-        const autoProdCosts = [5000, 8000];
-        const autoProdLimits = [3, 6];
+        const autoProdCosts = [5000, 8000, 10000];
+        const autoProdLimits = [3, 6, 9];
         btnBuyAutoProd.onclick = () => {
             if(tutorialMode) { addFloatingText("Öğreticide kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); return; }
             
