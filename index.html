@@ -446,7 +446,8 @@
             
             // KATI ÖĞRETİCİ KİLİDİ:
             if (tutorialMode) {
-                if (tutorialStep !== 2) { 
+                // YENİ: 4. adımda aşı bitme ihtimaline karşı Tip-O üretimine izin veriyoruz
+                if (tutorialStep !== 2 && tutorialStep !== 4) { 
                     addFloatingText("Şu an aşı üretemezsin!", canvas.width/2, 120, '#ef4444'); 
                     return; 
                 }
