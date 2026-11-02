@@ -63,7 +63,7 @@
                 <li><strong class="text-red-400">MİHRAK VE TEDBİR:</strong> Hastalık çıkan il <strong class="text-red-500">Kırmızı (Mihrak)</strong> kordona alınır. Komşuları <strong class="text-yellow-500">Sarı (Tedbir)</strong> kordona girer.</li>
                 <li><strong class="text-yellow-400">GELİŞMİŞ FİLYASYON KURALI:</strong> Kırmızı mihrak temizlendiğinde; Sarı kordondaki komşu il <strong class="text-blue-400">AŞILIYSA</strong> karantinası kalkar. <strong class="text-red-400">AŞISIZSA</strong> şüpheli olarak karantinada kalmaya devam eder! Orayı bizzat aşılamak zorundasınız. <strong class="text-blue-400">AŞILI</strong> olmasına rağmen mihrak temizlenmezse sarı kordondaki karantina da kalkmaz.</li>
                 <li><strong class="text-orange-400">BÜTÇE VE ZAYİAT:</strong> Kırmızı kordon saniyede -₺20, Sarı kordon -₺10 yer. Enstitüde her suş için 10 dozluk güvenli stok vardır, fazlası kullanılmazsa bozulur.</li>
-                <li><strong class="text-purple-400">AR-GE / MARKET:</strong> Sağ üstten yeni ekipler (Maks 6) ve Otonom Üretim Sistemleri (Maks 6 Doz Limit) alabilirsiniz.</li>
+                <li><strong class="text-purple-400">AR-GE / MARKET:</strong> Sağ üstten yeni ekipler (Maks 6) ve Otonom Üretim Sistemleri (Maks 9 Doz Limit) alabilirsiniz.</li>
                 <li><strong class="text-red-500">İFLAS DURUMU:</strong> Bütçe <strong class="text-red-600">-₺5000</strong>'ye düşerse iflas edersiniz!</li>
             </ul>
         </div>
@@ -384,8 +384,10 @@
             if(state.maxTeams >= 6) { btnBuyTeam.innerText = "MAKS."; btnBuyTeam.disabled = true; btnBuyTeam.classList.add('opacity-50'); } 
             else { btnBuyTeam.innerText = `₺${state.teamCost}`; }
 
-            if(state.autoProdLevel >= 2) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); } 
-            else if(state.autoProdLevel === 1) { btnBuyAutoProd.innerText = `₺10000`; }
+            if(state.autoProdLevel >= 3) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); }
+            else if(state.autoProdLevel > 0) { 
+                btnBuyAutoProd.innerText = `₺${autoProdCosts[state.autoProdLevel]}`; 
+            }
         }
 
         function updateTutorialUI() {
@@ -498,7 +500,7 @@
         btnBuyAutoProd.onclick = () => {
             if(tutorialMode) { addFloatingText("Öğreticide kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); return; }
             
-            if(state.autoProdLevel < 2) {
+            if(state.autoProdLevel < 3) {
                 let cost = autoProdCosts[state.autoProdLevel];
                 if ((state.money - cost) >= -5000) {
                     state.money -= cost;
