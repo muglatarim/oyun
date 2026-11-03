@@ -61,9 +61,9 @@
             <p><strong class="text-white">GÖREV:</strong> Ülke çapında yayılan mutasyonları durdur! 500. güne ulaşarak salgını tamamen eradike et.</p>
             <ul class="list-disc pl-5 flex flex-col gap-2">
                 <li><strong class="text-red-400">MİHRAK VE TEDBİR:</strong> Hastalık çıkan il <strong class="text-red-500">Kırmızı (Mihrak)</strong> kordona alınır. Komşuları <strong class="text-yellow-500">Sarı (Tedbir)</strong> kordona girer.</li>
-                <li><strong class="text-yellow-400">GELİŞMİŞ FİLYASYON KURALI:</strong> Kırmızı mihrak temizlendiğinde; Sarı kordondaki komşu il <strong class="text-blue-400">AŞILIYSA</strong> karantinası kalkar. <strong class="text-red-400">AŞISIZSA</strong> şüpheli olarak karantinada kalmaya devam eder! Orayı bizzat aşılamak zorundasınız.</li>
+                <li><strong class="text-yellow-400">GELİŞMİŞ FİLYASYON KURALI:</strong> Kırmızı mihrak temizlendiğinde; Sarı kordondaki komşu il <strong class="text-blue-400">AŞILIYSA</strong> karantinası kalkar. <strong class="text-red-400">AŞISIZSA</strong> şüpheli olarak karantinada kalmaya devam eder! Orayı bizzat aşılamak zorundasınız. <strong class="text-blue-400">AŞILI</strong> olmasına rağmen mihrak temizlenmezse sarı kordondaki karantina da kalkmaz.</li>
                 <li><strong class="text-orange-400">BÜTÇE VE ZAYİAT:</strong> Kırmızı kordon saniyede -₺20, Sarı kordon -₺10 yer. Enstitüde her suş için 10 dozluk güvenli stok vardır, fazlası kullanılmazsa bozulur.</li>
-                <li><strong class="text-purple-400">AR-GE / MARKET:</strong> Sağ üstten yeni ekipler (Maks 6) ve Otonom Üretim Sistemleri (Maks 6 Doz Limit) alabilirsiniz.</li>
+                <li><strong class="text-purple-400">AR-GE / MARKET:</strong> Sağ üstten yeni ekipler (Maks 6) ve Otonom Üretim Sistemleri (Maks 9 Doz Limit) alabilirsiniz.</li>
                 <li><strong class="text-red-500">İFLAS DURUMU:</strong> Bütçe <strong class="text-red-600">-₺5000</strong>'ye düşerse iflas edersiniz!</li>
             </ul>
         </div>
@@ -112,26 +112,26 @@
                 
                 <!-- Şap Enstitüsü -->
                 <div class="glass-panel p-2 rounded-xl flex flex-col gap-1 shadow-lg w-[260px] sm:w-[320px] pointer-events-auto">
-                    <div class="text-[9px] sm:text-[10px] text-blue-300 font-bold tracking-widest text-center border-b border-slate-600 pb-1 mb-1">ŞAP ENSTİTÜSÜ (₺100)</div>
+                    <div class="text-[9px] sm:text-[10px] text-blue-300 font-bold tracking-widest text-center border-b border-slate-600 pb-1 mb-1">🧬 ŞAP ENSTİTÜSÜ (₺100)</div>
                     <div class="flex flex-row justify-between items-center gap-1">
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-orange-500 mb-0.5">O:<span id="stk-o" class="text-white ml-0.5">5</span></span>
+                            <span class="text-[9px] font-bold text-orange-500 mb-0.5">Tip-O:<span id="stk-o" class="text-white ml-0.5">5</span></span>
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('Tip-O')">ÜRET</button>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-purple-500 mb-0.5">A:<span id="stk-a" class="text-white ml-0.5">0</span></span>
+                            <span class="text-[9px] font-bold text-purple-500 mb-0.5">Tip-A:<span id="stk-a" class="text-white ml-0.5">0</span></span>
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('Tip-A')">ÜRET</button>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-cyan-500 mb-0.5">As1:<span id="stk-as" class="text-white ml-0.5">0</span></span>
+                            <span class="text-[9px] font-bold text-cyan-500 mb-0.5">Asia-1:<span id="stk-as" class="text-white ml-0.5">0</span></span>
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('Asia-1')">ÜRET</button>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-red-500 mb-0.5">S2:<span id="stk-s2" class="text-white ml-0.5">0</span></span>
+                            <span class="text-[9px] font-bold text-red-500 mb-0.5">SAT-2:<span id="stk-s2" class="text-white ml-0.5">0</span></span>
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('SAT-2')">ÜRET</button>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-yellow-500 mb-0.5">C:<span id="stk-c" class="text-white ml-0.5">0</span></span>
+                            <span class="text-[9px] font-bold text-yellow-500 mb-0.5">Tip-C:<span id="stk-c" class="text-white ml-0.5">0</span></span>
                             <button class="produce-btn bg-slate-700 hover:bg-slate-600 text-white text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded" onclick="produce('Tip-C')">ÜRET</button>
                         </div>
                     </div>
@@ -194,12 +194,12 @@
                 <button id="btn-close-upgrade" class="text-blue-400 hover:text-white font-bold text-2xl leading-none">&times;</button>
             </div>
             <div class="p-4 flex flex-col gap-3 overflow-y-auto">
-                <p class="text-[10px] sm:text-xs text-slate-300">Yapay Zeka ve Lojistik ağınızı kurun.</p>
+                <p class="text-[10px] sm:text-xs text-slate-300">Otonom Sistemler ve Lojistik ağınızı kurun.</p>
                 
                 <div class="bg-slate-800 p-3 rounded-xl border border-slate-600 flex justify-between items-center">
                     <div>
-                        <h3 class="font-bold text-emerald-400 text-sm">Yeni Ekip Aracı</h3>
-                        <p class="text-[10px] text-slate-400">Aşı kapasitesini artırır. Maksimum 6 Ekip.</p>
+                        <h3 class="font-bold text-emerald-400 text-sm">Yeni Ekip</h3>
+                        <p class="text-[10px] text-slate-400">Aynı anda aşı uygulama kapasitesini artırır. Maksimum 6 Ekip.</p>
                     </div>
                     <button id="btn-buy-team" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs shadow-lg active:scale-95 shrink-0 transition">
                         ₺800
@@ -208,8 +208,8 @@
 
                 <div class="bg-slate-800 p-3 rounded-xl border border-slate-600 flex justify-between items-center">
                     <div>
-                        <h3 class="font-bold text-blue-400 text-sm">Otonom Üretim (Y.Z.)</h3>
-                        <p class="text-[10px] text-slate-400">Seçili aşıyı otomatik üretir. Limit kademeli artar.</p>
+                        <h3 class="font-bold text-blue-400 text-sm">Otonom Aşı Üretimi</h3>
+                        <p class="text-[10px] text-slate-400">Seçili (uygulanan) aşıyı seviyeye göre limitin altına düştüğünde otomatik üretir. (3 doz - 6 doz - 9 doz)</p>
                     </div>
                     <button id="btn-buy-auto-prod" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs shadow-lg active:scale-95 shrink-0 transition">
                         ₺5000
@@ -218,8 +218,8 @@
 
                 <div class="bg-slate-800 p-3 rounded-xl border border-slate-600 flex justify-between items-center">
                     <div>
-                        <h3 class="font-bold text-purple-400 text-sm">Otonom Filyasyon (Y.Z.)</h3>
-                        <p class="text-[10px] text-slate-400">Boş ekipler, seçili aşının hastalarına otomatik müdahale eder.</p>
+                        <h3 class="font-bold text-purple-400 text-sm">Otonom Filyasyon</h3>
+                        <p class="text-[10px] text-slate-400">Boş ekipler, seçili aşının karantina bölgelerine otomatik müdahale eder.</p>
                     </div>
                     <button id="btn-buy-auto-vac" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs shadow-lg active:scale-95 shrink-0 transition">
                         ₺10000
@@ -384,8 +384,10 @@
             if(state.maxTeams >= 6) { btnBuyTeam.innerText = "MAKS."; btnBuyTeam.disabled = true; btnBuyTeam.classList.add('opacity-50'); } 
             else { btnBuyTeam.innerText = `₺${state.teamCost}`; }
 
-            if(state.autoProdLevel >= 2) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); } 
-            else if(state.autoProdLevel === 1) { btnBuyAutoProd.innerText = `₺12000`; }
+            if(state.autoProdLevel >= 3) { btnBuyAutoProd.innerText = "MAKS."; btnBuyAutoProd.disabled = true; btnBuyAutoProd.classList.add('opacity-50'); }
+            else if(state.autoProdLevel > 0) { 
+                btnBuyAutoProd.innerText = `₺${autoProdCosts[state.autoProdLevel]}`; 
+            }
         }
 
         function updateTutorialUI() {
@@ -405,7 +407,7 @@
                 text.innerText = "Tek ekiple baş edemezsiniz. Sağ üstten AR-GE/MARKET'i açın ve 'Yeni Ekip Aracı' satın alın.";
             } else if (tutorialStep === 4) {
                 title.innerText = "SAHA MÜDAHALESİ (4/5)";
-                text.innerText = "Aşınız hazır! Alt menüden Tip-O seçiliyken, kırmızı ve sarı illere tıklayın.\n\nDİKKAT: Sadece sarıları aşılamak yetmez, kırmızı mihrakı kesinlikle aşılamalısın! (Aşı biterse tekrar üretebilirsiniz)";
+                text.innerText = "Aşınız hazır! Alt menüden Tip-O seçiliyken, kırmızı ve sarı illere tıklayın.\n\nDİKKAT: Karantinanın kalkması için sadece sarıları aşılamak yetmez, kırmızı mihrakı kesinlikle aşılamalısın! (Aşı biterse tekrar üretebilirsiniz)";
             } else if (tutorialStep === 5) {
                 title.innerText = "SERBEST MOD (5/5)";
                 text.innerText = "Tebrikler! Salgını bastırdınız. Gerçek zaman, bütçe zayiatı ve rastgele salgınlar akmaya başlıyor. Başarılar!";
@@ -443,7 +445,20 @@
 
         window.produce = function(strain, isAuto = false) {
             if (!gameStarted || state.isGameOver) return;
-            if (tutorialMode && tutorialStep === 2 && strain !== 'Tip-O') { addFloatingText("Öğreticide sadece Tip-O üretin!", canvas.width/2, 120, '#ef4444'); return; }
+            
+            // KATI ÖĞRETİCİ KİLİDİ:
+            if (tutorialMode) {
+                // YENİ: 4. adımda aşı bitme ihtimaline karşı Tip-O üretimine izin veriyoruz
+                if (tutorialStep !== 2 && tutorialStep !== 4) { 
+                    addFloatingText("Şu an aşı üretemezsin!", canvas.width/2, canvas.height/2, '#ef4444'); 
+                    return; 
+                }
+                if (strain !== 'Tip-O') { 
+                    addFloatingText("Öğreticide sadece Tip-O üret!", canvas.width/2, canvas.height/2, '#ef4444'); 
+                    return; 
+                }
+            }
+
             if ((state.money - 100) >= -5000 && state.producingTimer < 0) {
                 state.money -= 100; state.producingStrain = strain; state.producingTimer = 3.0;
                 produceBtns.forEach(b => b.disabled = true);
@@ -451,9 +466,24 @@
             }
         };
 
-        btnUpgrades.onclick = () => { upgradeModal.classList.remove('hidden'); upgradeModal.classList.add('flex'); };
-        btnCloseUpgrade.onclick = () => { upgradeModal.classList.add('hidden'); upgradeModal.classList.remove('flex'); };
+        btnUpgrades.onclick = () => { 
+            // KATI ÖĞRETİCİ KİLİDİ: Sadece 3. adımda açılabilir
+            if (tutorialMode && tutorialStep !== 3) {
+                addFloatingText("Market şu an kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); 
+                return;
+            }
+            upgradeModal.classList.remove('hidden'); upgradeModal.classList.add('flex'); 
+        };
 
+        btnCloseUpgrade.onclick = () => { 
+            // KATI ÖĞRETİCİ KİLİDİ: 3. adımda ekibi almadan marketten çıkmayı engeller
+            if (tutorialMode && tutorialStep === 3) {
+                addFloatingText("Önce Yeni Ekip Al!", canvas.width/2, canvas.height/2, '#ef4444');
+                return;
+            }
+            upgradeModal.classList.add('hidden'); upgradeModal.classList.remove('flex'); 
+        };
+        
         const teamLimit = 6;
         btnBuyTeam.onclick = () => {
             if(state.maxTeams < teamLimit && (state.money - state.teamCost) >= -5000) {
@@ -465,38 +495,50 @@
             }
         };
 
-        const autoProdCosts = [5000, 12000];
-        const autoProdLimits = [3, 6];
+        const autoProdCosts = [5000, 8000, 10000];
+        const autoProdLimits = [3, 6, 9];
         btnBuyAutoProd.onclick = () => {
-            if(state.autoProdLevel < 2) {
+            if(tutorialMode) { addFloatingText("Öğreticide kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); return; }
+            
+            if(state.autoProdLevel < 3) {
                 let cost = autoProdCosts[state.autoProdLevel];
                 if ((state.money - cost) >= -5000) {
                     state.money -= cost;
                     state.autoProduce = true;
                     state.autoProdLimit = autoProdLimits[state.autoProdLevel];
                     state.autoProdLevel++;
-                    
-                    if (state.disasterPhase === 0) { state.disasterPhase = 1; state.disasterDelayTimer = 10.0; } 
-                    addFloatingText(`YZ Üretim Seviye ${state.autoProdLevel}!`, canvas.width/2, canvas.height/2, '#3b82f6');
+                    //otonom felaketi
+                    //if (state.disasterPhase === 0) { state.disasterPhase = 1; state.disasterDelayTimer = 10.0; } 
+                    addFloatingText(`Otonom Aşı Üretimi Seviye ${state.autoProdLevel}!`, canvas.width/2, canvas.height/2, '#3b82f6');
                     updateUI();
                 }
             }
         };
 
         btnBuyAutoVac.onclick = () => {
+            if(tutorialMode) { addFloatingText("Öğreticide kapalı!", canvas.width/2, canvas.height/2, '#ef4444'); return; }
+            
             if(!state.autoVaccine && (state.money - 10000) >= -5000) {
                 state.money -= 10000; state.autoVaccine = true;
-                state.disasterPhase = 2; state.disasterTimer = 20.0 + Math.random() * 10.0; 
+                //otonom felaketi
+                //state.disasterPhase = 2; state.disasterTimer = 20.0 + Math.random() * 10.0; 
                 btnBuyAutoVac.innerText = "AKTİF"; btnBuyAutoVac.disabled = true; btnBuyAutoVac.classList.add('opacity-50');
-                addFloatingText("YZ Filyasyon Aktif!", canvas.width/2, canvas.height/2, '#a855f7'); updateUI();
+                addFloatingText("Otonom Filyasyon Aktif!", canvas.width/2, canvas.height/2, '#a855f7'); updateUI();
             }
         };
-
+        
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInteraction(e); }, {passive: false});
         canvas.addEventListener('mousedown', handleInteraction);
 
-        function handleInteraction(e) {
+                function handleInteraction(e) {
             if(!gameStarted || state.isGameOver) return;
+            
+            // KATI ÖĞRETİCİ KİLİDİ: 4. adımdan önce haritaya tıklama engeli
+            if(tutorialMode && tutorialStep < 4) {
+                addFloatingText("Haritaya müdahale için bekle!", e.clientX, e.clientY, '#ef4444'); 
+                return;
+            }
+
             if(e.target.closest('#ui-layer') || e.target.closest('.modal')) return;
             let cx = e.clientX || (e.touches && e.touches[0].clientX), cy = e.clientY || (e.touches && e.touches[0].clientY);
             let clickedNode = state.nodes.find(n => Math.hypot(cx - n.x, cy - n.y) <= n.radius + 20);
