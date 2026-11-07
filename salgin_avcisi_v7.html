@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Salgın Avcısı - V7</title>
+    <style>
+        :root {
+            --bg-color: #1e272e;
+            --board-bg: rgba(0, 0, 0, 0.4);
+            --text-color: #ecf0f1;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            background: linear-gradient(135deg, #1e272e, #0fb9b1);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* 100dvh mobil cihazlardaki alt menü barlarının gizleme sorununu çözer */
+            height: 100vh;
+            height: 100dvh; 
+            overflow: hidden;
+            touch-action: none;
+            transition: background 1s ease-in-out;
+            position: relative; /* Footer konumu için */
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            width: 95%;
+            max-width: 450px;
+            margin-top: 20px;
+            padding: 12px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 5;
+        }
+        .stat { text-align: center; flex: 1; }
+        .stat-val { font-size: 20px; font-weight: bold; color: #f1c40f; }
+        .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #dfe6e9; }
+        
+        .board-container {
+            margin-top: 15px;
+            background: var(--board-bg);
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 5;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            width: 95vw;
+            max-width: 450px;
+            height: 95vw;
+            max-height: 450px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        
+        #particles-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .piece {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 34px;
+            border-radius: 12px;
+            z-index: 10;
+            transition: top 0.3s ease-in-out, left 0.3s ease-in-out, transform 0.2s;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: inset 0 -3px 5px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .piece:active { transform: scale(0.85); }
+        
+        /* Özel Efektler */
+        .special-ambulance::after {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            border-radius: 12px; box-shadow: inset 0 0 15px 5px #0984e3;
+            animation: pulse-border 1s infinite;
+        }
+        .special-bomb::after {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            border-radius: 12px; box-shadow: inset 0 0 15px 5px #d63031;
+            animation: pulse-border 1s infinite;
+        }
+        .special-star::after {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            border-radius: 12px; box-shadow: inset 0 0 20px 8px #fdcb6e;
+            animation: pulse-border 0.5s infinite;
+        }
+        @keyframes pulse-border {
+            0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; }
+        }
+
+        .sweeper {
+            position: absolute; font-size: 38px; z-index: 50; pointer-events: none;
+            transition: left 0.3s linear, top 0.3s linear; display: flex; justify-content: center; align-items: center;
+            filter: drop-shadow(0 0 10px #0984e3);
+        }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0); } 40%, 60% { transform: translate3d(5px, 0, 0); }
+        }
+
+        /* YENİ: Garantili Kurumsal Footer Konumu */
+        .footer { 
+            position: absolute;
+            bottom: 15px; /* Ekranın altından 15px yukarıda kesin durur */
+            left: 0;
+            width: 100%;
+            font-size: 12px; 
+            text-align: center; 
+            color: rgba(255, 255, 255, 0.85); 
+            z-index: 5;
+            letter-spacing: 1px;
+            font-weight: 500;
+            pointer-events: none; /* Dokunmayı engellemesin diye */
+        }
+
+        #message-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; display: none;
+        }
+        .btn {
+            margin-top: 20px; padding: 15px 35px; font-size: 20px; border: none; border-radius: 30px;
+            background: #00b894; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(0,184,148,0.4); transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.95); }
+
+        #theme-transition-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(30,39,46,0.95), rgba(0,0,0,0.95));
+            z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transform: translateY(-100%);
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        #theme-transition-overlay.show { transform: translateY(0); }
+        #theme-transition-overlay h2 { color: #fff; font-size: 22px; letter-spacing: 3px; margin: 0; opacity: 0.8;}
+        #theme-transition-overlay h1 { color: #55efc4; font-size: 44px; margin: 10px 0; text-align: center; text-shadow: 0 0 20px rgba(85,239,196,0.5);}
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="stat">
+            <div class="stat-label">Seviye</div>
+            <div class="stat-val" id="level-val">1</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Puan</div>
+            <div class="stat-val" id="score-val">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Görev</div>
+            <div class="stat-val" id="target-val">🐑 x 15</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Hamle</div>
+            <div class="stat-val" id="moves-val">30</div>
+        </div>
+    </div>
+
+    <div class="board-container" id="board-container">
+        <div id="board"></div>
+        <canvas id="particles-canvas"></canvas>
+    </div>
+
+    <!-- Heryerde görünür kurumsal imza -->
+    <div class="footer">© Muğla İl Tarım ve Orman Müdürlüğü</div>
+
+    <div id="message-overlay">
+        <h1 id="msg-title" style="font-size:40px; color:#55efc4; margin-bottom:10px; text-align: center;">Tebrikler!</h1>
+        <p id="msg-desc" style="font-size:18px; color:#dfe6e9; text-align: center; white-space: pre-line;">Seviye tamamlandı.</p>
+        <button class="btn" id="overlay-btn">Devam Et</button>
+    </div>
+
+    <div id="theme-transition-overlay">
+        <h2>YENİ TEMA KİLİDİ AÇILDI</h2>
+        <h1 id="theme-name-display">LABORATUVAR</h1>
+    </div>
+
+<script>
+    const ROWS = 8;
+    const COLS = 8;
+    const boardEl = document.getElementById('board');
+    const boardContainer = document.getElementById('board-container');
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    const btnEl = document.getElementById('overlay-btn');
+    
+    function resizeCanvas() {
+        canvas.width = boardEl.clientWidth;
+        canvas.height = boardEl.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    let board = [];
+    
+    const THEMES = [
+        [
+            { id: 1, emoji: '🐑', bg: '#fab1a0' }, { id: 2, emoji: '🐐', bg: '#81ecec' }, { id: 3, emoji: '🐄', bg: '#55efc4' },
+            { id: 4, emoji: '🐕', bg: '#ffeaa7' }, { id: 5, emoji: '🐈', bg: '#ff7675' }, { id: 6, emoji: '🐓', bg: '#a29bfe' }
+        ],
+        [
+            { id: 11, emoji: '🧪', bg: '#fab1a0' }, { id: 12, emoji: '🧫', bg: '#81ecec' }, { id: 13, emoji: '🩸', bg: '#ff7675' },
+            { id: 14, emoji: '🌡️', bg: '#ffeaa7' }, { id: 15, emoji: '🦠', bg: '#55efc4' }, { id: 16, emoji: '🦟', bg: '#a29bfe' }
+        ],
+        [
+            { id: 21, emoji: '🍎', bg: '#ff7675' }, { id: 22, emoji: '🍋', bg: '#ffeaa7' }, { id: 23, emoji: '🍇', bg: '#a29bfe' },
+            { id: 24, emoji: '🌽', bg: '#fdcb6e' }, { id: 25, emoji: '🌾', bg: '#fab1a0' }, { id: 26, emoji: '🍯', bg: '#81ecec' }
+        ]
+    ];
+    
+    const THEME_NAMES = ["ÇİFTLİK VE SAHA", "LABORATUVAR", "TARIM VE ORMAN"];
+    const THEME_BGS = [
+        "linear-gradient(135deg, #1e272e, #0fb9b1)",
+        "linear-gradient(135deg, #1e272e, #6c5ce7)",
+        "linear-gradient(135deg, #1e272e, #e17055)"
+    ];
+
+    const SPECIAL_TYPES = { NORMAL: 'normal', AMBULANCE: 'ambulance', BOMB: 'bomb', STAR: 'star' };
+
+    let isAnimating = false;
+    let score = 0;
+    let moves = 30;
+    let level = 1;
+    let currentThemeIndex = 0;
+    let currentTheme = THEMES[0];
+    let targetType = currentTheme[0];
+    let targetCount = 15;
+
+    let particles = [];
+    function createParticles(x, y, color) {
+        for (let i = 0; i < 15; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, life: 1, color: color, size: Math.random() * 6 + 3 });
+    }
+    function updateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.03;
+            if (p.life <= 0) particles.splice(i, 1);
+            else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+        ctx.globalAlpha = 1.0;
+        requestAnimationFrame(updateParticles);
+    }
+    updateParticles();
+
+    function createSweeper(r, c, type) {
+        let cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+        if (!cell) return;
+        let sweep = document.createElement('div'); sweep.innerText = '🚑'; sweep.className = 'sweeper';
+        
+        if (type === 'H') {
+            sweep.style.top = cell.offsetTop + 'px'; sweep.style.left = '-60px';
+            sweep.style.width = cell.offsetWidth + 'px'; sweep.style.height = cell.offsetHeight + 'px';
+            boardEl.appendChild(sweep); setTimeout(() => { sweep.style.left = (boardEl.offsetWidth + 20) + 'px'; }, 10);
+        } else {
+            sweep.style.left = cell.offsetLeft + 'px'; sweep.style.top = '-60px';
+            sweep.style.width = cell.offsetWidth + 'px'; sweep.style.height = cell.offsetHeight + 'px';
+            boardEl.appendChild(sweep); setTimeout(() => { sweep.style.top = (boardEl.offsetHeight + 20) + 'px'; }, 10);
+        }
+        setTimeout(() => sweep.remove(), 400);
+    }
+
+    function initBoard() {
+        board = [];
+        boardEl.innerHTML = '';
+        for (let r = 0; r < ROWS; r++) {
+            let row = [];
+            for (let c = 0; c < COLS; c++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell'; cell.dataset.r = r; cell.dataset.c = c;
+                cell.addEventListener('pointerdown', handleTouchStart);
+                boardEl.appendChild(cell);
+                
+                let t = getRandomType();
+                while ((r >= 2 && board[r-1][c].type.id === t.id && board[r-2][c].type.id === t.id) || (c >= 2 && row[c-1].type.id === t.id && row[c-2].type.id === t.id)) {
+                    t = getRandomType();
+                }
+                row.push({ type: t, special: SPECIAL_TYPES.NORMAL });
+            }
+            board.push(row);
+        }
+        setTimeout(resizeCanvas, 100);
+        drawBoard();
+    }
+
+    function getRandomType() { return currentTheme[Math.floor(Math.random() * currentTheme.length)]; }
+
+    function drawBoard() {
+        document.querySelectorAll('.piece').forEach(el => el.remove());
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (board[r][c]) {
+                    let p = document.createElement('div'); p.className = 'piece'; p.style.backgroundColor = board[r][c].type.bg;
+                    if (board[r][c].special === SPECIAL_TYPES.AMBULANCE) { p.innerText = '🚑'; p.classList.add('special-ambulance'); }
+                    else if (board[r][c].special === SPECIAL_TYPES.BOMB) { p.innerText = '💣'; p.classList.add('special-bomb'); }
+                    else if (board[r][c].special === SPECIAL_TYPES.STAR) { p.innerText = '🌟'; p.style.backgroundColor = '#2d3436'; p.classList.add('special-star'); }
+                    else { p.innerText = board[r][c].type.emoji; }
+                    p.style.top = '0'; p.style.left = '0';
+                    let cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                    if(cell) cell.appendChild(p);
+                }
+            }
+        }
+    }
+
+    let startX, startY, startR, startC;
+    function handleTouchStart(e) {
+        if (isAnimating) return;
+        startX = e.clientX || e.touches?.[0].clientX; startY = e.clientY || e.touches?.[0].clientY;
+        startR = parseInt(this.dataset.r); startC = parseInt(this.dataset.c);
+        document.addEventListener('pointerup', handleTouchEnd);
+    }
+
+    function handleTouchEnd(e) {
+        document.removeEventListener('pointerup', handleTouchEnd);
+        if (isAnimating) return;
+        let endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : startX);
+        let endY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : startY);
+        let diffX = endX - startX; let diffY = endY - startY;
+        if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) return;
+        let targetR = startR; let targetC = startC;
+        if (Math.abs(diffX) > Math.abs(diffY)) { targetC += (diffX > 0) ? 1 : -1; } else { targetR += (diffY > 0) ? 1 : -1; }
+        if (targetR >= 0 && targetR < ROWS && targetC >= 0 && targetC < COLS) processSwap(startR, startC, targetR, targetC);
+    }
+
+    async function processSwap(r1, c1, r2, c2) {
+        isAnimating = true;
+        let p1 = board[r1][c1]; let p2 = board[r2][c2];
+        
+        board[r1][c1] = p2; board[r2][c2] = p1;
+        drawBoard(); await sleep(300);
+
+        let p1Special = p1.special !== SPECIAL_TYPES.NORMAL;
+        let p2Special = p2.special !== SPECIAL_TYPES.NORMAL;
+
+        if (p1Special || p2Special) {
+            moves--; updateUI();
+            
+            if (p1Special && p2Special) {
+                let triggerCoords = new Set();
+                let t1 = p1.special, t2 = p2.special;
+                if ((t1===SPECIAL_TYPES.BOMB && t2===SPECIAL_TYPES.BOMB) || (t1===SPECIAL_TYPES.AMBULANCE && t2===SPECIAL_TYPES.AMBULANCE) || (t1===SPECIAL_TYPES.AMBULANCE && t2===SPECIAL_TYPES.BOMB)) {
+                    boardContainer.classList.add('shake'); setTimeout(() => boardContainer.classList.remove('shake'), 500);
+                }
+                if (t1 === SPECIAL_TYPES.BOMB && t2 === SPECIAL_TYPES.BOMB) {
+                    for(let i=-2; i<=2; i++) for(let j=-2; j<=2; j++) if(r2+i>=0 && r2+i<ROWS && c2+j>=0 && c2+j<COLS) triggerCoords.add(`${r2+i},${c2+j}`);
+                }
+                else if ([t1,t2].includes(SPECIAL_TYPES.AMBULANCE) && [t1,t2].includes(SPECIAL_TYPES.BOMB)) {
+                    for(let i=0; i<ROWS; i++) { if(c2-1>=0) triggerCoords.add(`${i},${c2-1}`); triggerCoords.add(`${i},${c2}`); if(c2+1<COLS) triggerCoords.add(`${i},${c2+1}`); }
+                    for(let j=0; j<COLS; j++) { if(r2-1>=0) triggerCoords.add(`${r2-1},${j}`); triggerCoords.add(`${r2},${j}`); if(r2+1<ROWS) triggerCoords.add(`${r2+1},${j}`); }
+                    createSweeper(r2, c2, 'H'); createSweeper(r2, c2, 'V');
+                    if(r2-1>=0) createSweeper(r2-1, c2, 'H'); if(r2+1<ROWS) createSweeper(r2+1, c2, 'H');
+                    if(c2-1>=0) createSweeper(r2, c2-1, 'V'); if(c2+1<COLS) createSweeper(r2, c2+1, 'V');
+                }
+                else if (t1 === SPECIAL_TYPES.AMBULANCE && t2 === SPECIAL_TYPES.AMBULANCE) {
+                    for(let i=0; i<ROWS; i++) triggerCoords.add(`${i},${c2}`); for(let j=0; j<COLS; j++) triggerCoords.add(`${r2},${j}`);
+                    createSweeper(r2, c2, 'H'); createSweeper(r2, c2, 'V');
+                }
+                else if (t1 === SPECIAL_TYPES.STAR || t2 === SPECIAL_TYPES.STAR) {
+                    for(let i=0; i<ROWS; i++) for(let j=0; j<COLS; j++) triggerCoords.add(`${i},${j}`);
+                }
+                await executeChainReaction(Array.from(triggerCoords)); await dropPieces();
+                return;
+            } else {
+                let specPiece = p1Special ? p1 : p2; 
+                let tR = p1Special ? r2 : r1; let tC = p1Special ? c2 : c1; 
+                let replacedPiece = p1Special ? p2 : p1;
+                let nR = p1Special ? r1 : r2; let nC = p1Special ? c1 : c2;
+
+                let matches = findMatches();
+                let normalMatched = matches.some(m => m.cells.includes(`${nR},${nC}`));
+
+                if (normalMatched) {
+                    let addTrigs = [`${tR},${tC}`];
+                    if (specPiece.special === SPECIAL_TYPES.STAR) {
+                        for(let i=0; i<ROWS; i++) for(let j=0; j<COLS; j++) if(board[i][j] && board[i][j].type.id === replacedPiece.type.id) addTrigs.push(`${i},${j}`);
+                    }
+                    await processMatches(matches, {r: r1, c: c1}, {r: r2, c: c2}, addTrigs);
+                    return;
+                } else {
+                    let triggerCoords = new Set(); triggerCoords.add(`${tR},${tC}`);
+                    if (specPiece.special === SPECIAL_TYPES.STAR) {
+                        for(let i=0; i<ROWS; i++) for(let j=0; j<COLS; j++) if(board[i][j] && board[i][j].type.id === replacedPiece.type.id) triggerCoords.add(`${i},${j}`);
+                    }
+                    await executeChainReaction(Array.from(triggerCoords)); await dropPieces();
+                    return;
+                }
+            }
+        }
+
+        let matches = findMatches();
+        if (matches.length > 0) {
+            moves--; updateUI();
+            await processMatches(matches, {r: r1, c: c1}, {r: r2, c: c2});
+        } else {
+            board[r1][c1] = p1; board[r2][c2] = p2; drawBoard(); isAnimating = false;
+        }
+    }
+
+    function findMatches() {
+        let matchGroups = []; let horizontal = []; let vertical = [];
+        for(let r=0; r<ROWS; r++){
+            let matchLen = 1;
+            for(let c=0; c<COLS; c++){
+                let current = board[r][c]; let next = board[r][c+1];
+                if(current && next && current.type.id === next.type.id && current.special === SPECIAL_TYPES.NORMAL && next.special === SPECIAL_TYPES.NORMAL) { matchLen++; } 
+                else {
+                    if(matchLen >= 3) { let group = []; for(let k=0; k<matchLen; k++) group.push(`${r},${c-k}`); horizontal.push({ cells: group, id: current.type.id }); }
+                    matchLen = 1;
+                }
+            }
+        }
+        for(let c=0; c<COLS; c++){
+            let matchLen = 1;
+            for(let r=0; r<ROWS; r++){
+                let current = board[r][c]; let next = board[r+1]?.[c];
+                if(current && next && current.type.id === next.type.id && current.special === SPECIAL_TYPES.NORMAL && next.special === SPECIAL_TYPES.NORMAL) { matchLen++; } 
+                else {
+                    if(matchLen >= 3) { let group = []; for(let k=0; k<matchLen; k++) group.push(`${r-k},${c}`); vertical.push({ cells: group, id: current.type.id }); }
+                    matchLen = 1;
+                }
+            }
+        }
+
+        let usedVert = new Set();
+        horizontal.forEach(h => {
+            let intersect = null;
+            let vIndex = vertical.findIndex((v, idx) => {
+                if(usedVert.has(idx) || v.id !== h.id) return false;
+                let common = h.cells.find(c => v.cells.includes(c));
+                if(common) { intersect = common; return true; }
+                return false;
+            });
+
+            if(vIndex !== -1) {
+                usedVert.add(vIndex); let v = vertical[vIndex];
+                let allCells = Array.from(new Set([...h.cells, ...v.cells]));
+                let type = (h.cells.length >= 5 || v.cells.length >= 5) ? SPECIAL_TYPES.STAR : SPECIAL_TYPES.BOMB;
+                matchGroups.push({ cells: allCells, type: type, intersect: intersect });
+            } else {
+                let type = SPECIAL_TYPES.NORMAL;
+                if(h.cells.length >= 5) type = SPECIAL_TYPES.STAR; else if(h.cells.length === 4) type = SPECIAL_TYPES.AMBULANCE;
+                matchGroups.push({ cells: h.cells, type: type, intersect: null });
+            }
+        });
+        vertical.forEach((v, idx) => {
+            if(!usedVert.has(idx)) {
+                let type = SPECIAL_TYPES.NORMAL;
+                if(v.cells.length >= 5) type = SPECIAL_TYPES.STAR; else if(v.cells.length === 4) type = SPECIAL_TYPES.AMBULANCE;
+                matchGroups.push({ cells: v.cells, type: type, intersect: null });
+            }
+        });
+        return matchGroups;
+    }
+
+    async function processMatches(matchGroups, swapPos1 = null, swapPos2 = null, additionalTriggers = []) {
+        let cellsToDestroy = new Set(additionalTriggers); let specialsToSpawn = [];
+        matchGroups.forEach(group => {
+            let spawnCoord = group.cells[0]; 
+            let p1Str = swapPos1 ? `${swapPos1.r},${swapPos1.c}` : null;
+            let p2Str = swapPos2 ? `${swapPos2.r},${swapPos2.c}` : null;
+
+            if(group.intersect) spawnCoord = group.intersect;
+            else if (p2Str && group.cells.includes(p2Str)) spawnCoord = p2Str; 
+            else if (p1Str && group.cells.includes(p1Str)) spawnCoord = p1Str; 
+
+            group.cells.forEach(c => {
+                if(c === spawnCoord && group.type !== SPECIAL_TYPES.NORMAL) { specialsToSpawn.push({ coord: c, special: group.type, typeId: board[c.split(',')[0]][c.split(',')[1]].type }); } 
+                else { cellsToDestroy.add(c); }
+            });
+        });
+
+        if (cellsToDestroy.size > 0 || specialsToSpawn.length > 0) {
+            await executeChainReaction(Array.from(cellsToDestroy), specialsToSpawn); await dropPieces();
+        } else { checkWinState(); }
+    }
+
+    async function executeChainReaction(initialCoords, specialsToSpawn = []) {
+        let queue = [...initialCoords]; let processed = new Set(); let actualDestroyed = new Set();
+
+        while(queue.length > 0) {
+            let coord = queue.shift();
+            if(processed.has(coord)) continue;
+            processed.add(coord);
+            
+            let [r, c] = coord.split(',').map(Number); let piece = board[r][c];
+            if(!piece) continue;
+
+            if (!specialsToSpawn.find(s => s.coord === coord)) { actualDestroyed.add(coord); }
+
+            if (piece.special === SPECIAL_TYPES.AMBULANCE) {
+                boardContainer.classList.add('shake'); setTimeout(() => boardContainer.classList.remove('shake'), 400);
+                createSweeper(r, c, 'H'); createSweeper(r, c, 'V');
+                for(let i=0; i<ROWS; i++) queue.push(`${i},${c}`); for(let j=0; j<COLS; j++) queue.push(`${r},${j}`);
+            } 
+            else if (piece.special === SPECIAL_TYPES.BOMB) {
+                boardContainer.classList.add('shake'); setTimeout(() => boardContainer.classList.remove('shake'), 400);
+                for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++) if(r+i>=0 && r+i<ROWS && c+j>=0 && c+j<COLS) queue.push(`${r+i},${c+j}`);
+            }
+            else if (piece.special === SPECIAL_TYPES.STAR) {
+                let randomTarget = getRandomType(); 
+                for(let i=0; i<ROWS; i++) for(let j=0; j<COLS; j++) if(board[i][j] && board[i][j].type.id === randomTarget.id) queue.push(`${i},${j}`);
+            }
+        }
+
+        actualDestroyed.forEach(coord => {
+            let [r, c] = coord.split(',').map(Number);
+            if (board[r][c]) {
+                // PUANLAMA MANTIĞI
+                score += 10;
+                if (board[r][c].type.id === targetType.id) { targetCount--; score += 40; }
+                if (board[r][c].special !== SPECIAL_TYPES.NORMAL) { score += 90; }
+
+                let cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                if(cell) {
+                    let rect = cell.getBoundingClientRect(); let boardRect = boardContainer.getBoundingClientRect();
+                    createParticles(rect.left - boardRect.left + rect.width/2, rect.top - boardRect.top + rect.height/2, board[r][c].type.bg);
+                }
+                board[r][c] = null;
+            }
+        });
+
+        specialsToSpawn.forEach(s => { let [r, c] = s.coord.split(',').map(Number); board[r][c] = { type: s.typeId, special: s.special }; });
+        drawBoard(); updateUI(); await sleep(350);
+    }
+
+    async function dropPieces() {
+        for(let c=0; c<COLS; c++){
+            let emptySlots = 0;
+            for(let r=ROWS-1; r>=0; r--){
+                if(!board[r][c]) { emptySlots++; } else if(emptySlots > 0) { board[r+emptySlots][c] = board[r][c]; board[r][c] = null; }
+            }
+            for(let r=0; r<emptySlots; r++){ board[r][c] = { type: getRandomType(), special: SPECIAL_TYPES.NORMAL }; }
+        }
+        drawBoard(); await sleep(400);
+        let newMatches = findMatches();
+        if (newMatches.length > 0) { await processMatches(newMatches); } else { checkWinState(); }
+    }
+
+    function checkWinState() {
+        if (targetCount <= 0) {
+            document.getElementById('msg-title').innerText = "Tebrikler!";
+            document.getElementById('msg-title').style.color = "#55efc4";
+            document.getElementById('msg-desc').innerText = `Seviye ${level} başarıyla geçildi!
+
+Şu anki Puanın: ${score}`;
+            btnEl.innerText = "Devam Et"; btnEl.onclick = nextLevel;
+            document.getElementById('message-overlay').style.display = 'flex';
+        } else if (moves <= 0) {
+            document.getElementById('msg-title').innerText = "Oyun Bitti!";
+            document.getElementById('msg-title').style.color = "#ff7675";
+            document.getElementById('msg-desc').innerText = `Hamlen tükendi.
+
+Toplam Skorun: ${score}`;
+            btnEl.innerText = "En Baştan Başla"; btnEl.onclick = restartGame;
+            document.getElementById('message-overlay').style.display = 'flex';
+        } else {
+            isAnimating = false;
+        }
+    }
+
+    function restartGame() {
+        document.getElementById('message-overlay').style.display = 'none';
+        document.getElementById('msg-title').style.color = "#55efc4";
+        btnEl.onclick = nextLevel;
+        
+        level = 1; score = 0; moves = 30;
+        currentThemeIndex = 0; currentTheme = THEMES[0];
+        targetCount = 15; targetType = getRandomType();
+        
+        document.body.style.background = THEME_BGS[0];
+        updateUI(); initBoard(); isAnimating = false;
+    }
+
+    function nextLevel() {
+        document.getElementById('message-overlay').style.display = 'none';
+        
+        let oldThemeIndex = Math.floor((level - 1) / 5) % THEMES.length;
+        level++;
+        let newThemeIndex = Math.floor((level - 1) / 5) % THEMES.length;
+        
+        if (oldThemeIndex !== newThemeIndex) {
+            moves = 30; 
+            currentThemeIndex = newThemeIndex; currentTheme = THEMES[newThemeIndex];
+            targetCount = 15 + (currentThemeIndex * 5); 
+            
+            document.body.style.background = THEME_BGS[newThemeIndex];
+            let overlay = document.getElementById('theme-transition-overlay');
+            document.getElementById('theme-name-display').innerText = THEME_NAMES[newThemeIndex];
+            overlay.classList.add('show');
+            
+            setTimeout(() => {
+                targetType = getRandomType(); updateUI(); initBoard(); 
+                setTimeout(() => { overlay.classList.remove('show'); setTimeout(() => { isAnimating = false; }, 600); }, 1500);
+            }, 600);
+        } else {
+            moves += 5; targetCount = 15 + (currentThemeIndex * 5); 
+            targetType = getRandomType(); updateUI(); isAnimating = false;
+        }
+    }
+
+    function updateUI() {
+        if(targetCount < 0) targetCount = 0;
+        document.getElementById('level-val').innerText = level;
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('target-val').innerText = `${targetType.emoji} x ${targetCount}`;
+        document.getElementById('moves-val').innerText = moves;
+    }
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    targetType = getRandomType(); updateUI(); initBoard();
+    btnEl.onclick = nextLevel;
+
+</script>
+</body>
+</html>

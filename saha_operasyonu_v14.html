@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Saha Operasyonu - V14</title>
+    <style>
+        :root {
+            --bg-color: #27ae60;
+            --grass: #2ecc71;
+            --dirt: #d35400;
+            --cell-size: clamp(32px, 10vw, 45px);
+        }
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-color);
+            background-image: radial-gradient(#2ecc71 15%, transparent 16%), radial-gradient(#2ecc71 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; height: 100dvh; overflow: hidden; touch-action: none;
+        }
+
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(26, 37, 47, 0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .game-title { font-size: 36px; color: #f1c40f; margin-bottom: 10px; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .game-desc {
+            font-size: 16px; color: #ecf0f1; max-width: 400px; margin-bottom: 30px;
+            line-height: 1.5; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px;
+        }
+        .menu-options { background: rgba(255,255,255,0.1); padding: 15px 25px; border-radius: 10px; margin-bottom: 30px; }
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; gap: 15px; font-size: 18px; font-weight: bold; }
+        
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e74c3c; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2ecc71; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        
+        .btn-start-main {
+            padding: 15px 40px; font-size: 22px; font-weight: bold; color: white; background: #2ecc71;
+            border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            margin-bottom: 20px; transition: transform 0.1s;
+        }
+        .btn-start-main:active { transform: scale(0.95); }
+        .btn-update {
+            padding: 10px 20px; font-size: 14px; color: #bdc3c7; background: transparent;
+            border: 1px solid #7f8c8d; border-radius: 20px; cursor: pointer; transition: 0.2s;
+            position: absolute; bottom: 30px;
+        }
+        .btn-update:active { background: rgba(255,255,255,0.1); }
+
+        .header {
+            width: 95%; max-width: 450px; margin-top: 15px; display: flex; justify-content: space-between;
+            background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10;
+        }
+        .stat-box { text-align: center; flex: 1;}
+        .stat-label { font-size: 11px; color: #bdc3c7; text-transform: uppercase; letter-spacing: 1px;}
+        .stat-val { font-size: 20px; font-weight: bold; color: #f1c40f; }
+        
+        .timer-container {
+            width: 90%; max-width: 450px; height: 12px; background: #333; border-radius: 6px; margin-top: 15px;
+            overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); position: relative; z-index: 10;
+        }
+        .timer-bar { height: 100%; width: 100%; background: #e74c3c; transition: width 1s linear; }
+        .timer-text { position: absolute; width: 100%; top: -20px; text-align: center; font-size: 14px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+
+        #board {
+            display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px;
+            background: rgba(0,0,0,0.3); padding: 5px; border-radius: 10px;
+            margin-top: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
+        }
+
+        .cell {
+            width: var(--cell-size); height: var(--cell-size); background: var(--grass);
+            position: relative; cursor: pointer; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+        .cell:active { filter: brightness(0.8); }
+        
+        .inner { width: 100%; height: 100%; transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+        .pipe-center { position: absolute; top: 30%; left: 30%; width: 40%; height: 40%; background: var(--dirt); border-radius: 2px; }
+        .pipe-arm { position: absolute; background: var(--dirt); }
+        .arm-0 { top: 0; left: 30%; width: 40%; height: 32%; }
+        .arm-1 { top: 30%; right: 0; width: 32%; height: 40%; }
+        .arm-2 { bottom: 0; left: 30%; width: 40%; height: 32%; }
+        .arm-3 { top: 30%; left: 0; width: 32%; height: 40%; }
+
+        .source-cell .pipe-center { background: var(--dirt); border-radius: 5px; }
+        .source-arm { background: #2c3e50 !important; box-shadow: 0 0 10px #2c3e50; z-index: 2; }
+
+        .cow-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
+            font-size: calc(var(--cell-size) * 0.65); pointer-events: none; z-index: 5; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+            background: radial-gradient(circle, rgba(241,196,15,0.4) 0%, transparent 70%);
+        }
+        
+        .character {
+            position: absolute; width: var(--cell-size); height: var(--cell-size); display: flex; justify-content: center; align-items: center;
+            font-size: calc(var(--cell-size) * 0.7); z-index: 20; pointer-events: none; transition: top 0.3s linear, left 0.3s linear;
+            filter: drop-shadow(0 3px 3px rgba(0,0,0,0.6));
+        }
+
+        .controls { margin-top: 20px; z-index: 10; display: flex; gap: 10px; }
+        .btn {
+            padding: 12px 25px; border: none; border-radius: 25px; background: #f39c12; color: white; font-weight: bold; font-size: 16px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.4); transition: transform 0.1s, background 0.2s; border: 2px solid #e67e22;
+        }
+        .btn-hint { background: #3498db; border-color: #2980b9; display: none; } 
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #7f8c8d; border-color: #95a5a6; cursor: not-allowed; box-shadow: none; transform: none;}
+
+        #overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+        #overlay h1 { font-size: 40px; margin-bottom: 10px; text-align: center; padding: 0 10px; }
+        #overlay p { font-size: 18px; color: #bdc3c7; text-align: center; margin-bottom: 30px; padding: 0 20px; white-space: pre-line;}
+        
+        .footer { position: absolute; bottom: 10px; font-size: 12px; color: rgba(255,255,255,0.8); pointer-events: none; text-shadow: 1px 1px 2px #000;}
+        
+        .dig-effect {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(211, 84, 0, 0.5); pointer-events: none;
+            animation: flash 0.3s ease-out forwards; z-index: 6;
+        }
+        @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+        
+        .hint-highlight {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(46, 204, 113, 0.4); z-index: 4; pointer-events: none;
+            animation: pulse-hint 1.5s infinite;
+        }
+        @keyframes pulse-hint {
+            0% { opacity: 0.3; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.3; transform: scale(0.9); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 class="game-title">Saha Operasyonu</h1>
+        <div class="game-desc">
+            👨‍⚕️ Veteriner hekimi yönlendirerek arazideki sığırları aşıla.<br><br>
+            🛠️ Yol parçalarına tıklayarak çevir ve kesintisiz bir güzergah oluştur.<br><br>
+            🐕 Dikkat! Kangal köpekleri arazide gezip kurduğun yolları eşeleyebilir. İlerleyen seviyelerde köpek sayısı artacak!
+        </div>
+        
+        <div class="menu-options">
+            <div class="toggle-container">
+                <span>Zaman Sınırı (180s)</span>
+                <label class="switch">
+                    <input type="checkbox" id="timer-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <button class="btn-start-main" onclick="startGame()">Oyuna Başla</button>
+        <button class="btn-update" onclick="clearCacheAndReload()">Sürümü Güncelle (Ön Belleği Temizle)</button>
+    </div>
+
+    <div class="header">
+        <div class="stat-box">
+            <div class="stat-label">Sığır</div>
+            <div class="stat-val" id="cow-val">0 / 1</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Seviye</div>
+            <div class="stat-val" id="level-val">1</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Durum</div>
+            <div class="stat-val" id="status-val" style="color:#2ecc71;">Yol Yapımı</div>
+        </div>
+    </div>
+
+    <div class="timer-container" id="timer-container-el">
+        <div class="timer-text" id="timer-text">Süre: 180s</div>
+        <div class="timer-bar" id="timer-bar"></div>
+    </div>
+
+    <div id="board">
+        <div id="vet" class="character">👨‍⚕️</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-hint" id="btn-hint" onclick="showSolution()">Çözümü Göster 💡</button>
+        <button class="btn" id="btn-start" onclick="startDrive()">Yola Çık 👨‍⚕️</button>
+    </div>
+
+    <div class="footer">© Muğla İl Tarım ve Orman Müdürlüğü</div>
+
+    <div id="overlay">
+        <h1 id="msg-title">Sonuç</h1>
+        <p id="msg-desc">Açıklama</p>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-hint" id="btn-overlay-hint" onclick="showSolutionFromOverlay()" style="display:none;">Çözümü İncele 💡</button>
+            <button class="btn" id="btn-overlay" onclick="nextLevelOrRestart()">Devam Et</button>
+        </div>
+    </div>
+
+<script>
+    const ROWS = 9;
+    const COLS = 9;
+    const boardEl = document.getElementById('board');
+    const vetEl = document.getElementById('vet');
+    const startScreen = document.getElementById('start-screen');
+    const timerContainer = document.getElementById('timer-container-el');
+    
+    let grid = [];
+    let isDriving = false;
+    let isGameOver = false;
+    let isTimedMode = true; 
+    let solutionPath = []; 
+    let solutionRotations = []; 
+    
+    let buildTimerInterval;
+    let timeLeft = 180;
+    
+    let dogInterval;
+    let dogs = []; 
+    let numDogs = 0;
+    
+    let vetInterval;
+    let vet = { r: 8, c: 0, dir: 1, startDir: 1 };
+    
+    let cowsTotal = 1;
+    let cowsVaccinated = 0;
+    let level = 1;
+    
+    let currentCowPositions = [];
+    let sourcePos = { r: 8, c: 0 };
+
+    function setDifficultySettings() {
+        if(level >= 1 && level <= 3) { cowsTotal = 1; numDogs = 0; }
+        else if(level >= 4 && level <= 6) { cowsTotal = 2; numDogs = 0; }
+        else if(level >= 7 && level <= 10) { cowsTotal = 3; numDogs = 0; }
+        else if(level >= 11 && level <= 15) { cowsTotal = 3; numDogs = 1; }
+        else if(level >= 16 && level <= 20) { cowsTotal = 3; numDogs = 2; }
+        else if(level >= 21 && level <= 25) { cowsTotal = 4; numDogs = 2; }
+        else { cowsTotal = 4; numDogs = 3; } 
+    }
+
+    function findPathAvoid(startR, startC, targetR, targetC, avoidSet) {
+        let queue = [{r: startR, c: startC, path: [{r: startR, c: startC}]}];
+        let visited = new Set();
+        visited.add(`${startR},${startC}`);
+
+        while(queue.length > 0) {
+            let curr = queue.shift();
+            if(curr.r === targetR && curr.c === targetC) return curr.path;
+
+            let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+            for(let d of dirs) {
+                let nr = curr.r + d[0];
+                let nc = curr.c + d[1];
+                let key = `${nr},${nc}`;
+
+                if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
+                    if(!visited.has(key) && !avoidSet.has(key)) {
+                        visited.add(key);
+                        let newPath = [...curr.path, {r: nr, c: nc}];
+                        queue.push({r: nr, c: nc, path: newPath});
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function calculateRotations(fullPath) {
+        let rotations = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+        let pathTypes = Array(ROWS).fill().map(() => Array(COLS).fill('straight'));
+
+        for(let i=0; i<fullPath.length; i++) {
+            let r = fullPath[i].r;
+            let c = fullPath[i].c;
+            let type = 'straight';
+            let correctRot = 0;
+            
+            if (i > 0 && i < fullPath.length - 1) {
+                let prev = fullPath[i-1];
+                let next = fullPath[i+1];
+                
+                let inDir = -1;
+                let outDir = -1;
+                
+                if(prev.r < r) inDir = 0; 
+                else if(prev.c > c) inDir = 1; 
+                else if(prev.r > r) inDir = 2; 
+                else if(prev.c < c) inDir = 3; 
+                
+                if(next.r < r) outDir = 0; 
+                else if(next.c > c) outDir = 1; 
+                else if(next.r > r) outDir = 2; 
+                else if(next.c < c) outDir = 3; 
+                
+                let min = Math.min(inDir, outDir);
+                let max = Math.max(inDir, outDir);
+                
+                if ((min === 0 && max === 2) || (min === 1 && max === 3)) {
+                    type = 'straight';
+                    correctRot = (min === 0) ? 0 : 1; 
+                } else {
+                    type = 'corner';
+                    if (min === 0 && max === 1) correctRot = 0;
+                    else if (min === 1 && max === 2) correctRot = 1;
+                    else if (min === 2 && max === 3) correctRot = 2;
+                    else if (min === 0 && max === 3) correctRot = 3;
+                }
+            } else if (i === fullPath.length - 1) {
+                type = 'straight';
+                let prev = fullPath[i-1];
+                correctRot = (prev.c !== c) ? 1 : 0;
+            } else if (i === 0) {
+                type = 'source'; 
+                correctRot = 0; 
+            }
+            
+            pathTypes[r][c] = type;
+            rotations[r][c] = correctRot;
+        }
+        return { pathTypes, rotations };
+    }
+
+    function generateGuaranteedLevel() {
+        let success = false;
+        setDifficultySettings(); 
+        
+        let attempts = 0;
+
+        while(!success && attempts < 1000) {
+            attempts++;
+            sourcePos.r = Math.floor(Math.random() * ROWS);
+            sourcePos.c = 0; 
+
+            let cows = [];
+            while(cows.length < cowsTotal) {
+                let r = Math.floor(Math.random() * ROWS);
+                let c = Math.floor(Math.random() * (COLS - 2)) + 2; 
+                if((r !== sourcePos.r || c !== sourcePos.c) && !cows.some(cow => cow.r === r && cow.c === c)) {
+                    cows.push({r, c});
+                }
+            }
+
+            let avoidSet = new Set();
+            let fullPath = [];
+            let current = {r: sourcePos.r, c: sourcePos.c};
+            let possible = true;
+
+            for(let i=0; i<cowsTotal; i++) {
+                let target = cows[i];
+                let pathSegment = findPathAvoid(current.r, current.c, target.r, target.c, avoidSet);
+                
+                if(!pathSegment) { possible = false; break; }
+                if(i > 0) pathSegment.shift(); 
+                fullPath = fullPath.concat(pathSegment);
+                
+                for(let p of pathSegment) {
+                    if(p.r !== target.r || p.c !== target.c) avoidSet.add(`${p.r},${p.c}`);
+                }
+                current = target;
+            }
+
+            if(possible) {
+                grid = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+                currentCowPositions = cows;
+                solutionPath = fullPath;
+                
+                let { pathTypes, rotations } = calculateRotations(fullPath);
+                solutionRotations = rotations;
+
+                let startDir = 1;
+                if (fullPath.length > 1) {
+                    let next = fullPath[1];
+                    if (next.r < sourcePos.r) startDir = 0; 
+                    else if (next.c > sourcePos.c) startDir = 1; 
+                    else if (next.r > sourcePos.r) startDir = 2; 
+                    else if (next.c < sourcePos.c) startDir = 3; 
+                }
+                vet = { r: sourcePos.r, c: sourcePos.c, dir: startDir, startDir: startDir };
+
+                for(let i=0; i<fullPath.length; i++) {
+                    let r = fullPath[i].r;
+                    let c = fullPath[i].c;
+                    let isSource = (i === 0);
+                    let isCow = cows.some(cow => cow.r === r && cow.c === c);
+                    
+                    grid[r][c] = { type: pathTypes[r][c], rot: Math.floor(Math.random() * 4), isCow: isCow, isSource: isSource };
+                    if(isSource) grid[r][c].rot = 0; 
+                }
+
+                for(let r=0; r<ROWS; r++){
+                    for(let c=0; c<COLS; c++){
+                        if(!grid[r][c]) {
+                            grid[r][c] = { type: Math.random() > 0.5 ? 'straight' : 'corner', rot: Math.floor(Math.random() * 4), isCow: false, isSource: false };
+                        }
+                    }
+                }
+                
+                dogs = [];
+                for(let d = 0; d < numDogs; d++) {
+                    let dR, dC;
+                    let validSpawn = false;
+                    while(!validSpawn) {
+                        dR = Math.floor(Math.random() * (ROWS - 2)) + 1; 
+                        dC = Math.floor(Math.random() * (COLS - 2)) + 1;
+                        if(dR === sourcePos.r && dC === sourcePos.c) continue;
+                        if(cows.some(cw => cw.r === dR && cw.c === dC)) continue;
+                        if(dogs.some(dg => dg.r === dR && dg.c === dC)) continue;
+                        validSpawn = true;
+                    }
+                    dogs.push({ r: dR, c: dC, dir: 1, isVertical: Math.random() > 0.5 });
+                }
+                success = true;
+            }
+        }
+        
+        // Hata ayıklama / 1000 denemede harita bulunamazsa (güvenlik)
+        if(!success) {
+            grid = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){
+                    grid[r][c] = { type: 'straight', rot: 0, isCow: false, isSource: false };
+                }
+            }
+            grid[8][0] = { type: 'source', rot: 0, isCow: false, isSource: true };
+            vet = { r: 8, c: 0, dir: 1, startDir: 1 };
+            dogs = [];
+            cowsTotal = 1; // Boş harita kurtarıcısı
+        }
+    }
+
+    function startGame() {
+        try {
+            let elem = document.documentElement;
+            let requestMethod = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+            if(requestMethod) {
+                let promise = requestMethod.call(elem);
+                if(promise !== undefined) { promise.catch(() => {}); }
+            }
+        } catch (e) {}
+        
+        isTimedMode = document.getElementById('timer-toggle').checked;
+        document.getElementById('start-screen').style.display = 'none';
+        
+        if(!isTimedMode) {
+            document.getElementById('timer-container-el').style.display = 'none';
+            document.getElementById('btn-hint').style.display = 'inline-block'; 
+        } else {
+            document.getElementById('timer-container-el').style.display = 'block';
+            document.getElementById('btn-hint').style.display = 'none'; 
+        }
+        
+        initGame();
+    }
+
+    function clearCacheAndReload() {
+        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+    }
+
+    function initGame() {
+        document.querySelectorAll('.cell').forEach(e => e.remove());
+        document.querySelectorAll('.dog-character').forEach(e => e.remove());
+        
+        isDriving = false;
+        isGameOver = false;
+        timeLeft = 180;
+        cowsVaccinated = 0;
+        
+        if(!isTimedMode) document.getElementById('btn-hint').disabled = false;
+        document.getElementById('btn-start').disabled = false;
+        
+        generateGuaranteedLevel();
+        
+        updateUI();
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('btn-overlay-hint').style.display = 'none';
+        document.getElementById('status-val').innerText = "Yol Yapımı";
+        document.getElementById('status-val').style.color = "#2ecc71";
+        
+        drawBoardDOM();
+        updateCharacterPositions();
+        
+        clearInterval(buildTimerInterval);
+        if(isTimedMode) {
+            buildTimerInterval = setInterval(buildTick, 1000);
+        }
+        
+        clearInterval(dogInterval);
+        if(dogs.length > 0) {
+            dogInterval = setInterval(moveDog, 1200);
+        }
+        
+        clearInterval(vetInterval);
+    }
+
+    function getPorts(type, rot, isSource = false) {
+        if (isSource) {
+            let base = [0,0,0,0];
+            base[vet.startDir] = 1; 
+            return base;
+        }
+        let base = [0,0,0,0];
+        if(type === 'straight') base = [1,0,1,0]; 
+        else if(type === 'corner') base = [1,1,0,0]; 
+        let ports = [...base];
+        for(let i=0; i<rot; i++) ports.unshift(ports.pop());
+        return ports;
+    }
+
+    function drawBoardDOM() {
+        for(let r=0; r<ROWS; r++){
+            for(let c=0; c<COLS; c++){
+                let cellData = grid[r][c];
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${r}-${c}`;
+                
+                let inner = document.createElement('div');
+                inner.className = 'inner';
+                inner.id = `inner-${r}-${c}`;
+                
+                let center = document.createElement('div');
+                center.className = 'pipe-center';
+                inner.appendChild(center);
+                
+                if(cellData.type === 'straight') {
+                    inner.innerHTML += `<div class="pipe-arm arm-0"></div><div class="pipe-arm arm-2"></div>`;
+                } else if (cellData.type === 'corner') {
+                    inner.innerHTML += `<div class="pipe-arm arm-0"></div><div class="pipe-arm arm-1"></div>`;
+                } else if (cellData.type === 'source') {
+                    inner.classList.add('source-cell');
+                    inner.innerHTML += `<div class="pipe-arm arm-${vet.startDir} source-arm"></div>`;
+                }
+                
+                cell.appendChild(inner);
+                
+                if(cellData.isCow) {
+                    let cow = document.createElement('div');
+                    cow.className = 'cow-overlay';
+                    cow.id = `cow-${r}-${c}`;
+                    cow.innerText = '🐄';
+                    cell.appendChild(cow);
+                }
+                
+                cell.onclick = () => {
+                    if(isDriving || isGameOver || cellData.isSource) return;
+                    cellData.rot = (cellData.rot + 1) % 4;
+                    updateCellDOM(r, c);
+                };
+                
+                boardEl.appendChild(cell);
+                updateCellDOM(r, c);
+            }
+        }
+        
+        dogs.forEach((dg, i) => {
+            let dEl = document.createElement('div');
+            dEl.className = 'character dog-character';
+            dEl.id = `dog-${i}`;
+            dEl.innerText = '🐕';
+            boardEl.appendChild(dEl);
+        });
+    }
+
+    function updateCellDOM(r, c) {
+        let cellData = grid[r][c];
+        let inner = document.getElementById(`inner-${r}-${c}`);
+        if(inner && !cellData.isSource) {
+            inner.style.transform = `rotate(${cellData.rot * 90}deg)`;
+        }
+    }
+
+    function updateCharacterPositions() {
+        dogs.forEach((dg, i) => {
+            let cellDog = document.getElementById(`cell-${dg.r}-${dg.c}`);
+            let dEl = document.getElementById(`dog-${i}`);
+            if(cellDog && dEl) {
+                dEl.style.top = cellDog.offsetTop + 'px';
+                dEl.style.left = cellDog.offsetLeft + 'px';
+            }
+        });
+        
+        let cellVet = document.getElementById(`cell-${vet.r}-${vet.c}`);
+        if(cellVet) {
+            vetEl.style.top = cellVet.offsetTop + 'px';
+            vetEl.style.left = cellVet.offsetLeft + 'px';
+        }
+    }
+
+    function buildTick() {
+        if(isGameOver || isDriving) return;
+        timeLeft--;
+        updateUI();
+        if(timeLeft <= 0) {
+            gameOver(false, "Süre Bitti!", "Yetiştiriciler beklemekten sıkılıp hayvanları saldı! Aşılamaya yetişemedin.");
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('cow-val').innerText = `${cowsVaccinated} / ${cowsTotal}`;
+        document.getElementById('level-val').innerText = level;
+        if(isTimedMode) {
+            document.getElementById('timer-bar').style.width = (timeLeft / 180 * 100) + '%';
+            document.getElementById('timer-text').innerText = `Süre: ${timeLeft}s`;
+        }
+    }
+
+    function moveDog() {
+        if(isGameOver) return; 
+        
+        dogs.forEach((dg, i) => {
+            if(dg.isVertical) {
+                dg.r += dg.dir;
+                if(dg.r >= ROWS - 1) { dg.dir = -1; dg.r = ROWS - 1; }
+                if(dg.r <= 1) { dg.dir = 1; dg.r = 1; }
+            } else {
+                dg.c += dg.dir;
+                if(dg.c >= COLS - 1) { dg.dir = -1; dg.c = COLS - 1; }
+                if(dg.c <= 1) { dg.dir = 1; dg.c = 1; }
+            }
+            
+            updateCharacterPositions();
+            
+            if(isDriving && dg.r === vet.r && dg.c === vet.c) {
+                gameOver(false, "Kangal Saldırdı!", "Köpek hekimin yolunu kesti. Operasyon iptal!");
+            }
+
+            let cellData = grid[dg.r][dg.c];
+            if(!isDriving && !cellData.isCow && !cellData.isSource) {
+                cellData.rot = Math.floor(Math.random() * 4); 
+                updateCellDOM(dg.r, dg.c);
+                
+                let cell = document.getElementById(`cell-${dg.r}-${dg.c}`);
+                if(cell) {
+                    let flash = document.createElement('div');
+                    flash.className = 'dig-effect';
+                    cell.appendChild(flash);
+                    setTimeout(() => { if(flash.parentNode) flash.remove(); }, 300);
+                }
+            }
+        });
+    }
+
+    function showSolution() {
+        if(!isTimedMode) {
+            document.getElementById('btn-hint').disabled = true;
+        }
+        
+        clearInterval(dogInterval);
+        
+        for(let i=0; i<solutionPath.length; i++) {
+            let r = solutionPath[i].r;
+            let c = solutionPath[i].c;
+            
+            if(grid[r][c].type !== 'source') {
+                grid[r][c].rot = solutionRotations[r][c];
+                updateCellDOM(r, c);
+            }
+            
+            let cell = document.getElementById(`cell-${r}-${c}`);
+            if(cell && !cell.querySelector('.hint-highlight')) {
+                let highlight = document.createElement('div');
+                highlight.className = 'hint-highlight';
+                cell.appendChild(highlight);
+            }
+        }
+        
+        if(isTimedMode && !isGameOver) {
+            timeLeft = Math.max(1, timeLeft - 30);
+            updateUI();
+        }
+    }
+    
+    function showSolutionFromOverlay() {
+        document.getElementById('overlay').style.display = 'none';
+        showSolution();
+        
+        isDriving = true; 
+        document.getElementById('btn-start').disabled = true;
+        
+        let controls = document.querySelector('.controls');
+        controls.innerHTML = `<button class="btn" onclick="nextLevelOrRestart()">Yeniden Dene 🔄</button>`;
+    }
+
+    function startDrive() {
+        if(isDriving || isGameOver) return;
+        isDriving = true;
+        clearInterval(buildTimerInterval);
+        document.getElementById('btn-start').disabled = true;
+        if(!isTimedMode) document.getElementById('btn-hint').disabled = true;
+        
+        document.getElementById('status-val').innerText = "Hekim Yolda!";
+        document.getElementById('status-val').style.color = "#f39c12";
+        
+        vet.dir = vet.startDir;
+        vetInterval = setInterval(moveVet, 400); 
+    }
+
+    function moveVet() {
+        if(isGameOver) return;
+        
+        let nextR = vet.r;
+        let nextC = vet.c;
+        
+        if(vet.dir === 0) nextR--;
+        else if(vet.dir === 1) nextC++;
+        else if(vet.dir === 2) nextR++;
+        else if(vet.dir === 3) nextC--;
+        
+        if(nextR < 0 || nextR >= ROWS || nextC < 0 || nextC >= COLS) {
+            gameOver(false, "Yol Bitti!", "Hekim araziden çıktı ve yolunu kaybetti!");
+            return;
+        }
+        
+        if(dogs.some(dg => dg.r === nextR && dg.c === nextC)) {
+            gameOver(false, "Kangal Saldırdı!", "Köpek hekimin yolunu kesti. Operasyon iptal!");
+            return;
+        }
+        
+        let nextCell = grid[nextR][nextC];
+        let enterPort = (vet.dir + 2) % 4;
+        let ports = getPorts(nextCell.type, nextCell.rot, nextCell.isSource);
+        
+        if(ports[enterPort] === 1) {
+            vet.r = nextR;
+            vet.c = nextC;
+            
+            let exitPort = -1;
+            for(let i=0; i<4; i++){
+                if(ports[i] === 1 && i !== enterPort) {
+                    exitPort = i;
+                    break;
+                }
+            }
+            vet.dir = exitPort;
+            
+            if(nextCell.isCow) {
+                nextCell.isCow = false;
+                cowsVaccinated++;
+                updateUI();
+                
+                let cowEl = document.getElementById(`cow-${vet.r}-${vet.c}`);
+                if(cowEl) cowEl.innerText = '✅';
+                
+                if(cowsVaccinated >= cowsTotal) {
+                    updateCharacterPositions();
+                    if(level === 25) {
+                        gameOver(true, "Tebrikler!", "Tüm mahalleler aşılandı! Saha operasyonu başarıyla tamamlandı.");
+                    } else {
+                        gameOver(true, "Operasyon Başarılı!", "Harika! Tüm sığırları süre bitmeden aşıladın.");
+                    }
+                    return;
+                }
+            }
+            updateCharacterPositions();
+        } else {
+            gameOver(false, "Yol Koptu!", "Yanlış yola girdin, güzergah tıkalı!");
+        }
+    }
+
+    function gameOver(isWin, titleStr, descStr) {
+        clearInterval(buildTimerInterval);
+        clearInterval(vetInterval);
+        clearInterval(dogInterval);
+        isGameOver = true;
+        
+        let overlay = document.getElementById('overlay');
+        let title = document.getElementById('msg-title');
+        let desc = document.getElementById('msg-desc');
+        let btn = document.getElementById('btn-overlay');
+        let hintBtnOverlay = document.getElementById('btn-overlay-hint');
+        
+        title.innerText = titleStr;
+        title.style.color = isWin ? "#2ecc71" : "#e74c3c";
+        desc.innerText = descStr;
+        
+        if (isWin) {
+            btn.innerText = (level === 25) ? "Baştan Başla" : "Sonraki Seviye";
+            hintBtnOverlay.style.display = 'none';
+        } else {
+            btn.innerText = "Tekrar Oyna";
+            hintBtnOverlay.style.display = 'inline-block';
+        }
+        
+        setTimeout(() => { overlay.style.display = 'flex'; }, 500);
+    }
+
+    function nextLevelOrRestart() {
+        let title = document.getElementById('msg-title').innerText;
+        
+        let controls = document.querySelector('.controls');
+        controls.innerHTML = `<button class="btn btn-hint" id="btn-hint" onclick="showSolution()">Çözümü Göster 💡</button>
+                              <button class="btn" id="btn-start" onclick="startDrive()">Yola Çık 👨‍⚕️</button>`;
+        
+        if(!isTimedMode) { document.getElementById('btn-hint').style.display = 'inline-block'; }
+
+        if(title === "Operasyon Başarılı!" || title === "Tebrikler!") {
+            if(level === 25) {
+                level = 1; 
+            } else {
+                level++;
+            }
+        } 
+        initGame();
+    }
+
+</script>
+</body>
+</html>
