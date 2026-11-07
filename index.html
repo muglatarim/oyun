@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hayvan Sağlığı Eğitim Oyunları | Muğla İl Tarım ve Orman Müdürlüğü</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32; /* Tarım yeşili */
+            --secondary-color: #1565c0; /* Veteriner/Bakanlık mavisi */
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Üst Bilgi (Header) Alanı */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-bottom: 5px solid var(--secondary-color);
+        }
+
+        header h1 {
+            margin-bottom: 0.5rem;
+            font-size: 2.2rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        /* Ana İçerik ve Grid Yapısı */
+        main {
+            flex: 1;
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+            width: 100%;
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        /* Oyun Kartları */
+        .game-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #eaeaea;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+        }
+
+        /* Kart Görsel/İkon Alanı */
+        .card-icon {
+            height: 150px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4.5rem;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        /* Yeşil tonlu alternatif kart arkaplanı */
+        .game-card:nth-child(even) .card-icon {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: #555;
+            margin-bottom: 1.5rem;
+            flex: 1;
+            line-height: 1.5;
+        }
+
+        .play-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            text-align: center;
+            padding: 0.7rem;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .game-card:hover .play-btn {
+            background-color: #0d47a1;
+        }
+
+        /* Alt Bilgi (Footer) Alanı */
+        footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: auto;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Mobil Cihazlar İçin Optimizasyon */
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.8rem; }
+            .card-icon { height: 120px; font-size: 3.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Hayvan Sağlığı Oyun Portalı</h1>
+        <p>İnteraktif Eğitim ve Saha Simülasyonları</p>
+    </header>
+
+    <main>
+        <!-- Oyunların listelendiği Grid alanı -->
+        <div class="game-grid" id="oyunListesi">
+            
+            <!-- Oyun 1: Karantina Hattı -->
+            <a href="karantinahatti.html" class="game-card">
+                <div class="card-icon">🚧</div>
+                <div class="card-content">
+                    <h2 class="card-title">Karantina Hattı</h2>
+                    <p class="card-desc">Karantina bölgelerini stratejik olarak yönetin ve enfeksiyonun yayılmasını engellemek için doğru hamleleri yapın.</p>
+                    <div class="play-btn">Oyunu Başlat</div>
+                </div>
+            </a>
+
+            <!-- Oyun 2: Saha Operasyonu -->
+            <a href="sahaoperasyonu.html" class="game-card">
+                <div class="card-icon">🚜</div>
+                <div class="card-content">
+                    <h2 class="card-title">Saha Operasyonu</h2>
+                    <p class="card-desc">Sahadaki aşılama, denetim ve bilgilendirme görevlerini yöneterek operasyonları başarıyla tamamlayın.</p>
+                    <div class="play-btn">Oyunu Başlat</div>
+                </div>
+            </a>
+
+            <!-- Oyun 3: Salgın Avcısı -->
+            <a href="salginavcisi.html" class="game-card">
+                <div class="card-icon">🔍</div>
+                <div class="card-content">
+                    <h2 class="card-title">Salgın Avcısı</h2>
+                    <p class="card-desc">Hastalık belirtilerini ve epidemiyolojik izleri takip ederek filyasyon çalışmalarını yürütün.</p>
+                    <div class="play-btn">Oyunu Başlat</div>
+                </div>
+            </a>
+
+            <!-- Oyun 4: Şap Salgını -->
+            <a href="sapsalgini.html" class="game-card">
+                <div class="card-icon">🐄</div>
+                <div class="card-content">
+                    <h2 class="card-title">Şap Salgını</h2>
+                    <p class="card-desc">Şap hastalığına karşı zorlu bir mücadele verin, sürü sağlığını korumak için hızlı kararlar alın.</p>
+                    <div class="play-btn">Oyunu Başlat</div>
+                </div>
+            </a>
+
+        </div>
+    </main>
+
+    <footer>
+        &copy; Muğla İl Tarım ve Orman Müdürlüğü
+    </footer>
+
+</body>
+</html>
