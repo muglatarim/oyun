@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TBC Simülatör Pro (Mobil Uyumlu)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; user-select: none; touch-action: manipulation; }
+        .animal-card { transition: transform 0.1s ease-in-out, box-shadow 0.2s; }
+        .animal-card:active { transform: scale(0.90); }
+        .pulse-border-red { animation: pulse-red 1.5s infinite; }
+        .pulse-border-yellow { animation: pulse-yellow 1.5s infinite; }
+        .pulse-border-blue { animation: pulse-blue 1.5s infinite; }
+        .pulse-border-purple { animation: pulse-purple 1.5s infinite; }
+        .pulse-border-gray { animation: pulse-gray 1.5s infinite; }
+        
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
+        @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
+        @keyframes pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(168, 85, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); } }
+        @keyframes pulse-gray { 0% { box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(148, 163, 184, 0); } 100% { box-shadow: 0 0 0 0 rgba(148, 163, 184, 0); } }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .zone-container { min-height: 120px; }
+        
+        .modal-scrollable { max-height: 70vh; overflow-y: auto; }
+    </style>
+</head>
+<body class="h-[100dvh] w-screen flex flex-col text-sm md:text-base">
+
+    <!-- Üst Bar -->
+    <header class="bg-slate-900 border-b border-slate-700 flex flex-wrap justify-between items-center px-2 py-2 shrink-0 gap-2 z-10">
+        <div class="flex items-center gap-2 md:gap-4">
+            <h1 class="text-emerald-400 font-bold text-base md:text-lg hidden md:block">🐄 TBC SİMÜLATÖR</h1>
+            <div class="flex items-center gap-1 md:gap-2 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                <span class="text-[10px] md:text-xs text-slate-400">GÜN</span>
+                <span class="font-bold text-base md:text-xl text-white" id="day-counter">1</span>
+            </div>
+            <div class="flex items-center gap-1 md:gap-2 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                <span class="text-[10px] md:text-xs text-slate-400">NEGATİF</span>
+                <span class="font-bold text-sm md:text-lg text-blue-400" id="consecutive-negative">0/2</span>
+            </div>
+        </div>
+        
+        <div class="flex-1 min-w-[120px] max-w-xl mx-2 flex flex-col justify-center">
+            <div class="flex justify-between text-[8px] md:text-[10px] text-slate-400 mb-1 leading-none">
+                <span class="hidden md:inline">TEMİZ SÜRE (42 GÜN)</span>
+                <span class="md:hidden">42 GÜN KURALI</span>
+                <span id="progress-text">İLK TEST...</span>
+            </div>
+            <div class="h-1.5 md:h-2 w-full bg-slate-700 rounded-full overflow-hidden">
+                <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1 md:gap-2">
+            <button id="btn-fullscreen" class="bg-slate-700 hover:bg-slate-600 p-1.5 md:p-2 rounded text-white text-xs md:text-base"><i class="fa-solid fa-expand"></i></button>
+            <button onclick="resetGame()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-700/50 px-2 py-1 md:px-3 md:py-1 rounded font-medium transition text-xs md:text-sm"><i class="fa-solid fa-rotate-right mr-1"></i><span class="hidden md:inline">Yeniden Başlat</span></button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Sol/Üst Panel -->
+        <div id="left-panel" class="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col shrink-0 h-[35%] md:h-full z-10 transition-all duration-300">
+            <div class="p-2 md:p-3 border-b border-slate-700 shrink-0">
+                <h2 class="text-[10px] md:text-xs font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-wider hidden md:block">Aksiyon Paneli</h2>
+                <button id="btn-action" class="w-full bg-blue-600 text-white font-bold py-2 md:py-3 px-2 md:px-4 rounded shadow-lg transition-colors flex items-center justify-center gap-1.5 md:gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-base">
+                    <i class="fa-solid fa-play"></i> Zamanı Başlat
+                </button>
+                <div id="status-text" class="mt-1.5 md:mt-3 text-[9px] md:text-[11px] text-slate-400 p-1.5 md:p-2 bg-slate-800 rounded border border-slate-700 text-center leading-relaxed">
+                    DURUM: BEKLENİYOR...
+                </div>
+            </div>
+            
+            <div class="flex-1 flex flex-col overflow-hidden relative">
+                <div class="flex justify-between items-center bg-slate-900/80 sticky top-0 px-2 py-1 md:p-3 md:pb-1 z-10">
+                    <h2 class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Olay Günlüğü</h2>
+                    <button id="btn-toggle-log" class="md:hidden text-slate-400 hover:text-white p-1" onclick="toggleLogPanel()">
+                        <i class="fa-solid fa-chevron-up" id="log-toggle-icon"></i>
+                    </button>
+                </div>
+                <div id="log-container" class="flex-1 overflow-y-auto px-2 pb-2 md:p-3 space-y-1.5 text-[10px] md:text-xs"></div>
+            </div>
+        </div>
+
+        <!-- Sağ/Alt Panel -->
+        <div class="flex-1 flex flex-col bg-slate-800 p-2 md:p-3 gap-2 md:gap-3 overflow-y-auto relative z-0">
+            
+            <div class="bg-slate-900/50 rounded-lg border border-slate-700 p-2 md:p-3 flex-1 flex flex-col zone-container">
+                <div class="flex justify-between items-center mb-2 shrink-0">
+                    <h2 class="font-bold text-slate-300 text-sm md:text-base">🐄 Ana Sürü</h2>
+                    <span id="main-herd-count" class="text-[10px] md:text-xs bg-slate-700 px-2 py-1 rounded">0 Baş</span>
+                </div>
+                <div id="zone-main" class="flex-1 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 content-start overflow-y-auto pr-1"></div>
+            </div>
+
+            <div class="flex flex-row gap-2 md:gap-3 min-h-[140px] shrink-0">
+                <div class="bg-yellow-900/20 rounded-lg border border-yellow-700/50 p-2 flex-1 flex flex-col zone-container relative group">
+                    <div class="flex justify-between items-center mb-2 shrink-0">
+                        <h2 class="font-bold text-yellow-500 text-xs md:text-sm truncate">⚠️ Şüpheli</h2>
+                        <span id="sus-herd-count" class="text-[9px] md:text-xs bg-yellow-900/50 text-yellow-300 px-1.5 py-0.5 rounded">0</span>
+                    </div>
+                    <div id="zone-suspect" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-2 content-start overflow-y-auto"></div>
+                </div>
+
+                <div class="bg-red-900/20 rounded-lg border border-red-700/50 p-2 flex-1 flex flex-col zone-container relative group">
+                    <div class="flex justify-between items-center mb-2 shrink-0">
+                        <h2 class="font-bold text-red-500 text-xs md:text-sm truncate">💀 Pozitif</h2>
+                        <span id="pos-herd-count" class="text-[9px] md:text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded">0</span>
+                    </div>
+                    <div id="zone-positive" class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-2 content-start overflow-y-auto"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-700 text-center py-1.5 shrink-0 z-10">
+        <p class="text-[9px] md:text-[11px] text-slate-500 font-medium">© Muğla İl Tarım ve Orman Müdürlüğü</p>
+    </footer>
+
+    <!-- Başlangıç Modalı -->
+    <div id="startup-modal" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 md:p-6 max-w-lg w-full shadow-2xl relative flex flex-col max-h-[90vh]">
+            <h2 class="text-lg md:text-xl font-bold text-red-500 mb-2 shrink-0"><i class="fa-solid fa-file-signature mr-2"></i>İhbar ve İdari İşlemler</h2>
+            <p class="text-slate-400 text-xs md:text-sm mb-4 shrink-0">İşletmedeki sığırlardan birinin kesimhanede <strong>Generalize Tüberküloz</strong> olduğu tespit edildi! Orijin işletmeye filyasyon yapıldı. İdari adımları tamamlayın:</p>
+            
+            <div class="space-y-2 mb-5 overflow-y-auto pr-1 flex-1 min-h-0 custom-scrollbar" id="admin-tasks"></div>
+            
+            <div class="flex flex-col items-center shrink-0">
+                <button id="btn-start-game" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 md:py-3 rounded shadow opacity-50 cursor-not-allowed transition text-sm md:text-base" disabled>
+                    İşlemler Tamamlandı - Sürüyü Görüntüle
+                </button>
+                <button onclick="clearCacheAndReload()" class="mt-3 text-[10px] md:text-xs text-slate-500 hover:text-slate-300 transition w-auto">
+                    <i class="fa-solid fa-rotate mr-1"></i> Sürüm Güncelle (Ön Belleği Temizle)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sönüş Modalı -->
+    <div id="endgame-modal" class="fixed inset-0 bg-slate-900/90 z-50 items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 md:p-6 max-w-lg w-full shadow-2xl relative flex flex-col max-h-[90vh]">
+            
+            <!-- Görevler Görünümü -->
+            <div id="endgame-tasks-view" class="flex flex-col h-full">
+                <h2 class="text-lg md:text-xl font-bold text-emerald-500 mb-2 shrink-0"><i class="fa-solid fa-file-signature mr-2"></i>Sönüş İdari İşlemleri</h2>
+                <p class="text-slate-400 text-xs md:text-sm mb-4 shrink-0">İşletmede hastalık söndürme şartları sağlandı. Kısıtlamaları kaldırmak ve süreci bitirmek için son idari adımları tamamlayın:</p>
+                
+                <div class="space-y-2 mb-5 overflow-y-auto pr-1 flex-1 min-h-0 custom-scrollbar" id="endgame-tasks"></div>
+                
+                <button id="btn-end-complete" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 md:py-3 rounded shadow opacity-50 cursor-not-allowed transition text-sm md:text-base shrink-0" disabled>
+                    Tüm İşlemler Tamam
+                </button>
+            </div>
+
+            <!-- Başarı (Kupa) Görünümü -->
+            <div id="endgame-success-view" class="hidden text-center py-4 flex-col justify-center h-full">
+                <i class="fa-solid fa-trophy text-6xl md:text-7xl text-yellow-400 mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]"></i>
+                <h2 class="text-2xl md:text-3xl font-bold text-emerald-500 mb-2">Tebrikler!</h2>
+                <h3 class="text-xl md:text-2xl font-bold text-emerald-400 mb-6">Hastalık Söndürüldü</h3>
+                
+                <div class="flex gap-2">
+                    <button onclick="viewLogs()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded shadow transition text-sm md:text-base flex items-center justify-center">
+                        <i class="fa-solid fa-list mr-2"></i> Günlüğü İncele
+                    </button>
+                    <button id="btn-end-reset" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded shadow transition text-sm md:text-base flex items-center justify-center">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> Yeni Oyun
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Log İnceleme Modalı (Oyun Sonu) -->
+    <div id="log-view-modal" class="fixed inset-0 bg-slate-900/95 z-[60] items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 w-full max-w-2xl shadow-2xl relative flex flex-col h-[85vh]">
+            <div class="flex justify-between items-center mb-4 shrink-0 border-b border-slate-700 pb-2">
+                <h2 class="text-lg font-bold text-white"><i class="fa-solid fa-book mr-2"></i>Oyun Sonu Olay Günlüğü</h2>
+                <button onclick="closeLogView()" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-700">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="log-view-container" class="flex-1 overflow-y-auto pr-2 space-y-2 text-xs md:text-sm custom-scrollbar bg-slate-900/50 p-3 rounded border border-slate-700/50">
+                <!-- Loglar buraya kopyalanacak -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function clearCacheAndReload() {
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) caches.delete(name);
+                });
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.set('v', new Date().getTime());
+            window.location.href = url.href;
+        }
+
+        const STATE = {
+            IDLE: 'IDLE',
+            TIME_RUNNING: 'TIME_RUNNING',
+            WAITING_TEST_KIT: 'WAITING_TEST_KIT',
+            WAITING_42_FOR_APPLICATION: 'WAITING_42_FOR_APPLICATION',
+            TEST_APPLICATION: 'TEST_APPLICATION',
+            WAITING_TEST_READ: 'WAITING_TEST_READ',
+            TEST_READING: 'TEST_READING',
+            QUARANTINE_ALLOCATION: 'QUARANTINE_ALLOCATION',
+            GAME_OVER: 'GAME_OVER'
+        };
+
+        let currentState = STATE.IDLE;
+        let day = 1;
+        let cleanDays = 0;
+        let consecutiveNegatives = 0;
+        let targetEventDay = 0; 
+        let timeInterval = null;
+        let animals = [];
+        let idCounter = 1;
+        let pendingAction = null; 
+        
+        let isFirstTest = true;
+        let totalTestsCompleted = 0;
+        let logsArray = [];
+
+        const TEST_ELIGIBLE_AGE = 42; 
+        const GESTATION_PERIOD = 280;
+        const PREGNANCY_ELIGIBLE_AGE = 540;
+        
+        const DOM = {
+            day: document.getElementById('day-counter'),
+            consNeg: document.getElementById('consecutive-negative'),
+            progBar: document.getElementById('progress-bar'),
+            progText: document.getElementById('progress-text'),
+            btnAction: document.getElementById('btn-action'),
+            statusText: document.getElementById('status-text'),
+            logContainer: document.getElementById('log-container'),
+            zoneMain: document.getElementById('zone-main'),
+            zoneSuspect: document.getElementById('zone-suspect'),
+            zonePositive: document.getElementById('zone-positive'),
+            countMain: document.getElementById('main-herd-count'),
+            countSuspect: document.getElementById('sus-herd-count'),
+            countPositive: document.getElementById('pos-herd-count')
+        };
+        
+        function toggleLogPanel() {
+            const panel = document.getElementById('left-panel');
+            const icon = document.getElementById('log-toggle-icon');
+            
+            if (panel.classList.contains('h-[35%]')) {
+                panel.classList.remove('h-[35%]');
+                panel.classList.add('h-[80%]', 'absolute', 'w-full', 'top-0', 'shadow-2xl');
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            } else {
+                panel.classList.add('h-[35%]');
+                panel.classList.remove('h-[80%]', 'absolute', 'w-full', 'top-0', 'shadow-2xl');
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            }
+        }
+
+        function resetGame() {
+            if(timeInterval) clearInterval(timeInterval);
+            document.getElementById('startup-modal').style.display = 'flex';
+            document.getElementById('endgame-modal').classList.remove('flex');
+            document.getElementById('endgame-modal').classList.add('hidden');
+            
+            document.getElementById('endgame-tasks-view').classList.remove('hidden');
+            document.getElementById('endgame-success-view').classList.add('hidden');
+            document.getElementById('log-view-modal').classList.add('hidden');
+            document.getElementById('log-view-modal').classList.remove('flex');
+
+            document.getElementById('admin-tasks').innerHTML = '';
+            document.getElementById('btn-start-game').disabled = true;
+            document.getElementById('btn-start-game').classList.add('opacity-50', 'cursor-not-allowed');
+            DOM.logContainer.innerHTML = '';
+            logsArray = [];
+            
+            idCounter = 1;
+            day = 1;
+            cleanDays = 0;
+            consecutiveNegatives = 0;
+            targetEventDay = 0;
+            pendingAction = null;
+            totalTestsCompleted = 0;
+            isFirstTest = true;
+            currentState = STATE.IDLE;
+            
+            initGame();
+        }
+
+        function initGame() {
+            animals = [];
+            let herdSize = Math.floor(Math.random() * 11) + 5; 
+            for(let i=0; i<herdSize; i++) {
+                createAnimal(Math.floor(Math.random() * 1500) + 20);
+            }
+            
+            let hasEligiblePregnant = animals.some(a => a.pregnant && a.daysToBirth <= 90);
+            if (!hasEligiblePregnant && animals.length > 0) {
+                let adult = animals.find(a => a.age > PREGNANCY_ELIGIBLE_AGE);
+                if (!adult) {
+                    adult = animals[0];
+                    adult.age = PREGNANCY_ELIGIBLE_AGE + 100;
+                }
+                adult.pregnant = true;
+                adult.daysToBirth = Math.floor(Math.random() * 80) + 10; 
+                adult.forcePositiveOnFirstTest = true;
+            } else {
+                let eligible = animals.find(a => a.pregnant && a.daysToBirth <= 90);
+                if(eligible) eligible.forcePositiveOnFirstTest = true;
+            }
+
+            setupAdminTasks();
+            updateUI();
+            renderAnimals();
+        }
+
+        function createAnimal(ageDays) {
+            let isPregnant = ageDays > PREGNANCY_ELIGIBLE_AGE && Math.random() > 0.5;
+            animals.push({
+                id: idCounter++, age: ageDays, zone: 'MAIN',
+                pregnant: isPregnant, daysToBirth: isPregnant ? Math.floor(Math.random() * 90) + 1 : 0,
+                tested: false, testResult: null, slaughterDay: null, forcePositiveOnFirstTest: false,
+                waitingBirthForSlaughter: false, slaughterType: null, hasBeenTestedNegative: false
+            });
+        }
+
+        function setupAdminTasks() {
+            const tasks = [
+                "İşletmeyi güncelle ve orijin işletme tespiti yap",
+                "İşletme sahibini bilgilendir ve hayvanları yeddi emin teslim et",
+                "Hayvan Sağlık Zabıtası komisyon kararı al",
+                "VETBİS'ten işletmeye kısıt ekle ve hastalık çıkışı yap",
+                "Zoonoz yönünden İlçe Sağlık Müdürlüğüne bildir",
+                "Süt toplayıcısı ve diğer kurum bildirimlerini yap"
+            ];
+            const container = document.getElementById('admin-tasks');
+            container.innerHTML = '';
+            tasks.forEach(t => {
+                let div = document.createElement('div');
+                div.className = "flex items-center gap-2 md:gap-3 bg-slate-700/50 p-2 rounded border border-slate-600 cursor-pointer hover:bg-slate-700";
+                div.innerHTML = `<div class="w-5 h-5 md:w-6 md:h-6 shrink-0 rounded border border-slate-500 flex items-center justify-center task-checkbox"></div><span class="text-xs md:text-sm text-slate-300 select-none">${t}</span>`;
+                div.onclick = function() {
+                    let box = this.querySelector('.task-checkbox');
+                    if(box.innerHTML === '') {
+                        box.innerHTML = '<i class="fa-solid fa-check text-emerald-400 text-xs md:text-base"></i>';
+                        box.classList.add('border-emerald-500', 'bg-emerald-900/30');
+                        if(Array.from(document.querySelectorAll('.task-checkbox')).every(b => b.innerHTML !== '')) {
+                            document.getElementById('btn-start-game').disabled = false;
+                            document.getElementById('btn-start-game').classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                    }
+                };
+                container.appendChild(div);
+            });
+        }
+        
+        function setupEndgameTasks() {
+            const tasks = [
+                "Hayvan Sağlık Zabıtası komisyon kararı al",
+                "VETBİS'ten hastalık sönüşü yap ve işletme kıstını kaldır",
+                "Süt toplayıcısı ve diğer kurum bildirimlerini yap",
+                "Hayvan hastalığı tazminat işlemlerini başlat"
+            ];
+            const container = document.getElementById('endgame-tasks');
+            container.innerHTML = '';
+            
+            const btnComplete = document.getElementById('btn-end-complete');
+            btnComplete.disabled = true;
+            btnComplete.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            tasks.forEach(t => {
+                let div = document.createElement('div');
+                div.className = "flex items-center gap-2 md:gap-3 bg-slate-700/50 p-2 rounded border border-slate-600 cursor-pointer hover:bg-slate-700";
+                div.innerHTML = `<div class="w-5 h-5 md:w-6 md:h-6 shrink-0 rounded border border-slate-500 flex items-center justify-center task-checkbox-end"></div><span class="text-xs md:text-sm text-slate-300 select-none">${t}</span>`;
+                div.onclick = function() {
+                    let box = this.querySelector('.task-checkbox-end');
+                    if(box.innerHTML === '') {
+                        box.innerHTML = '<i class="fa-solid fa-check text-emerald-400 text-xs md:text-base"></i>';
+                        box.classList.add('border-emerald-500', 'bg-emerald-900/30');
+                        if(Array.from(document.querySelectorAll('.task-checkbox-end')).every(b => b.innerHTML !== '')) {
+                            btnComplete.disabled = false;
+                            btnComplete.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                    }
+                };
+                container.appendChild(div);
+            });
+            
+            btnComplete.onclick = () => {
+                document.getElementById('endgame-tasks-view').classList.add('hidden');
+                document.getElementById('endgame-success-view').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-end-reset').onclick = resetGame;
+        }
+        
+        function viewLogs() {
+            const modal = document.getElementById('log-view-modal');
+            const container = document.getElementById('log-view-container');
+            container.innerHTML = '';
+            
+            if(logsArray.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-center py-4">Günlük boş.</p>';
+            } else {
+                for(let i = logsArray.length -1; i >= 0; i--) {
+                    const log = logsArray[i];
+                    const div = document.createElement('div');
+                    div.className = `border-l-2 border-slate-600 pl-2 py-1.5 ${log.color} bg-slate-800/40 rounded-r`;
+                    div.innerHTML = `<span class="font-bold text-slate-500 mr-2">GÜN ${log.day}:</span> ${log.msg}`;
+                    container.appendChild(div);
+                }
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function closeLogView() {
+            document.getElementById('log-view-modal').classList.add('hidden');
+            document.getElementById('log-view-modal').classList.remove('flex');
+        }
+
+        document.getElementById('btn-start-game').onclick = () => {
+            document.getElementById('startup-modal').style.display = 'none';
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {});
+            }
+            logEvent("İşletmede hastalık tespiti yapıldı. Karantina başladı.", "text-yellow-400");
+            updateActionState();
+        };
+
+        function logEvent(msg, color = "text-slate-300") {
+            const div = document.createElement('div');
+            div.className = `border-l-2 border-slate-600 pl-2 py-1 ${color}`;
+            div.innerHTML = `<span class="font-bold text-slate-500 mr-1">GÜN ${day}:</span> ${msg}`;
+            DOM.logContainer.prepend(div);
+            
+            logsArray.push({day: day, msg: msg, color: color});
+        }
+
+        function updateUI() {
+            DOM.day.innerText = day;
+            DOM.consNeg.innerText = `${consecutiveNegatives}/2`;
+            
+            if (totalTestsCompleted === 0) {
+                DOM.progText.innerText = "İLK TEST BEKLENMEZ";
+                DOM.progBar.style.width = `100%`;
+                DOM.progBar.className = "h-full bg-blue-500 transition-all";
+            } else {
+                let ratio = Math.min(100, (cleanDays / 42) * 100);
+                DOM.progBar.style.width = `${ratio}%`;
+                DOM.progText.innerText = `${cleanDays} / 42 Gün`;
+                DOM.progBar.className = ratio === 100 ? "h-full bg-emerald-500 transition-all" : "h-full bg-blue-500 transition-all";
+            }
+        }
+        
+        function pauseTimeForEvent(title, text, icon) {
+            clearInterval(timeInterval);
+            DOM.btnAction.disabled = false;
+            DOM.btnAction.className = "w-full text-white font-bold py-2 md:py-3 px-2 md:px-4 rounded shadow-lg transition-colors flex items-center justify-center gap-1.5 md:gap-2 text-xs md:text-base bg-orange-600 hover:bg-orange-500";
+            DOM.btnAction.innerHTML = '<i class="fa-solid fa-play"></i> Zamanı Sürdür';
+            DOM.btnAction.onclick = () => startTime(targetEventDay, pendingAction);
+            DOM.statusText.innerHTML = `DURUM: DURAKLATILDI<br>${title}`;
+            Swal.fire({title: title, text: text, icon: icon, confirmButtonText: 'Anladım'});
+        }
+
+        function processDay() {
+            if (currentState === STATE.GAME_OVER) return;
+            day++;
+            
+            let hasPositive = animals.some(a => a.zone === 'POSITIVE' || a.testResult === 'POS');
+            if(!hasPositive && totalTestsCompleted > 0) {
+                cleanDays++;
+            } else if (hasPositive) {
+                cleanDays = 0;
+            }
+
+            animals.forEach(a => {
+                a.age++;
+                if (a.pregnant) {
+                    a.daysToBirth--;
+                    if (a.daysToBirth <= 0) {
+                        a.pregnant = false;
+                        logEvent(`ID:#${a.id} doğum yaptı! Yeni buzağı katıldı.`, "text-emerald-400");
+                        animals.push({
+                            id: idCounter++, age: 0, zone: 'MAIN', pregnant: false, daysToBirth: 0,
+                            tested: false, testResult: null, slaughterDay: null, forcePositiveOnFirstTest: false,
+                            waitingBirthForSlaughter: false, slaughterType: null, hasBeenTestedNegative: false
+                        });
+                        
+                        if (a.waitingBirthForSlaughter) {
+                            a.waitingBirthForSlaughter = false;
+                            logEvent(`ID:#${a.id} doğumu tamamladı. Artık Kesime Sevk Edilebilir!`, "text-red-400 font-bold");
+                        }
+                    }
+                } else if (a.age > PREGNANCY_ELIGIBLE_AGE && Math.random() < 0.005) {
+                    a.pregnant = true;
+                    a.daysToBirth = GESTATION_PERIOD;
+                }
+            });
+
+            let slaughteredToday = false;
+            let deathInQuarantine = false;
+            let deadAnimalId = null;
+            let condSlaughtered = [];
+            let volSlaughtered = [];
+
+            // Ayrı bir bayrak ile sadece hastalıklı ölüm (şüpheli/pozitif karantinadan) ayrılıp ayrılmadığı tespit edilsin
+            let hasPositiveLeftDueToSlaughterOrDeath = false;
+
+            animals = animals.filter(a => {
+                if (a.slaughterDay === day) {
+                    slaughteredToday = true;
+                    if(a.slaughterType === 'VOLUNTARY') {
+                        volSlaughtered.push(a.id);
+                    } else {
+                        condSlaughtered.push(a.id);
+                        if (a.zone === 'POSITIVE') hasPositiveLeftDueToSlaughterOrDeath = true;
+                    }
+                    return false;
+                }
+                
+                if ((a.zone === 'POSITIVE' || a.zone === 'SUSPECT') && Math.random() < 0.001 && !deathInQuarantine) {
+                    slaughteredToday = true;
+                    deathInQuarantine = true;
+                    deadAnimalId = a.id;
+                    if (a.zone === 'POSITIVE') hasPositiveLeftDueToSlaughterOrDeath = true;
+                    logEvent(`ID:#${a.id} karantinada öldü (İşletmeden Ayrıldı).`, "text-red-400 font-bold");
+                    return false; 
+                }
+                
+                return true;
+            });
+            
+            if (condSlaughtered.length > 0) {
+                logEvent(`Araç geldi, randevulu hayvanlar (ID: #${condSlaughtered.join(', #')}) şarta tabi kesimhaneye sevk edildi.`, "text-red-400 font-bold");
+            }
+            if (volSlaughtered.length > 0) {
+                logEvent(`Araç geldi, isteğe bağlı kesilen hayvanlar (ID: #${volSlaughtered.join(', #')}) en yakın mezbahaya sevk edildi.`, "text-orange-400 font-bold");
+            }
+
+            if (animals.length === 0) {
+                logEvent("İşletmede hiç hayvan kalmadı.", "text-yellow-400 font-bold");
+                updateUI();
+                renderAnimals();
+                triggerGameOver(true);
+                return;
+            }
+            
+            // Eğer işletmeden ayrılan hayvan pozitifse VE işletmede başka pozitif kalmadıysa, o zaman 42 günlük sayacı başlat!
+            if(hasPositiveLeftDueToSlaughterOrDeath && !animals.some(a => a.zone === 'POSITIVE')) {
+                cleanDays = 0;
+                logEvent("SON pozitif işletmeden ayrıldı. 42 gün bekleme başlıyor.", "text-emerald-400 font-bold");
+            }
+            
+            updateUI();
+            renderAnimals();
+
+            if (deathInQuarantine) {
+                pauseTimeForEvent('Karantinada Ölüm!', `Karantinadaki ID:#${deadAnimalId} numaralı hayvan ölü bulundu. İşletmeden çıkışı yapıldı. Devam etmek için aksiyon panelini kullanın.`, 'error');
+                return;
+            }
+
+            if (currentState === STATE.TIME_RUNNING && day >= targetEventDay) {
+                clearInterval(timeInterval);
+                triggerEvent();
+            }
+            
+            checkWinCondition();
+        }
+
+        function startTime(targetDay, actionName) {
+            targetEventDay = targetDay;
+            pendingAction = actionName;
+            currentState = STATE.TIME_RUNNING;
+            
+            DOM.btnAction.disabled = true;
+            DOM.btnAction.className = "w-full text-white font-bold py-2 md:py-3 px-2 md:px-4 rounded shadow-lg flex items-center justify-center gap-1.5 md:gap-2 bg-blue-400 opacity-80 cursor-not-allowed text-xs md:text-base";
+            DOM.btnAction.innerHTML = '<i class="fa-solid fa-forward-step fa-fade"></i> Zaman Akıyor...';
+            DOM.statusText.innerHTML = `Bekleniyor: ${targetDay}. Gün`;
+            
+            timeInterval = setInterval(processDay, 150);
+        }
+
+        function triggerEvent() {
+            if (pendingAction === 'TEST_KIT_ARRIVED') {
+                if (totalTestsCompleted > 0 && cleanDays < 42) {
+                    currentState = STATE.WAITING_42_FOR_APPLICATION;
+                    logEvent("Avian ve Bovine tüberkülin testleri ulaştı (42 Gün bekleniyor).", "text-blue-400");
+                } else {
+                    currentState = STATE.TEST_APPLICATION;
+                    logEvent("Avian ve Bovine tüberkülin testleri ulaştı.", "text-blue-400");
+                }
+            } else if (pendingAction === 'TEST_APPLICATION_READY') {
+                currentState = STATE.TEST_APPLICATION;
+                logEvent("42 gün kuralı tamamlandı. Enjeksiyon yapın.", "text-blue-400");
+            } else if (pendingAction === 'TEST_READ_TIME') {
+                currentState = STATE.TEST_READING;
+                logEvent("72 Saat doldu. Sonuçları okuyun.", "text-blue-400");
+            } else if (pendingAction === 'SLAUGHTER_VEHICLE_ARRIVED') {
+                currentState = STATE.IDLE;
+            } else if (pendingAction === 'IDLE') {
+                currentState = STATE.IDLE; 
+                logEvent("Bekleme süresi tamamlandı.", "text-slate-400");
+            }
+            updateActionState();
+            renderAnimals();
+        }
+
+        function updateActionState() {
+            if(currentState === STATE.TIME_RUNNING || currentState === STATE.GAME_OVER) return;
+            
+            DOM.btnAction.className = "w-full text-white font-bold py-2 md:py-3 px-2 md:px-4 rounded shadow-lg transition-colors flex items-center justify-center gap-1.5 md:gap-2 text-xs md:text-base";
+            DOM.btnAction.disabled = false;
+            DOM.btnAction.onclick = null;
+
+            if (currentState === STATE.IDLE) {
+                let unappointed = animals.filter(a => a.zone === 'POSITIVE' && !a.slaughterDay && !a.waitingBirthForSlaughter).length;
+                let pendingSlaughters = animals.filter(a => a.slaughterDay > day).map(a => a.slaughterDay);
+                let birthWaitingAnimals = animals.filter(a => a.zone === 'POSITIVE' && a.waitingBirthForSlaughter).map(a => day + a.daysToBirth);
+                
+                let nextSlaughter = pendingSlaughters.length > 0 ? Math.min(...pendingSlaughters) : Infinity;
+                let nextBirth = birthWaitingAnimals.length > 0 ? Math.min(...birthWaitingAnimals) : Infinity;
+                let nextEvent = Math.min(nextSlaughter, nextBirth);
+                
+                let hasPositive = animals.some(a => a.zone === 'POSITIVE');
+
+                if (unappointed > 0) {
+                    DOM.btnAction.classList.add('bg-slate-600', 'opacity-50', 'cursor-not-allowed');
+                    DOM.btnAction.innerHTML = 'Kesim Randevusu Alın';
+                    DOM.btnAction.disabled = true;
+                    DOM.statusText.innerHTML = "DURUM: KESİM İŞLEMİ<br>Pozitif hayvanlara tıklayıp kesime sevk edin.";
+                } else if (nextEvent !== Infinity) {
+                    DOM.btnAction.classList.add('bg-orange-600', 'hover:bg-orange-500');
+                    DOM.btnAction.innerHTML = `<i class="fa-solid fa-forward"></i> ${nextEvent}. Güne İlerle`;
+                    let act = nextEvent === nextSlaughter ? 'SLAUGHTER_VEHICLE_ARRIVED' : 'IDLE';
+                    DOM.btnAction.onclick = () => startTime(nextEvent, act);
+                    DOM.statusText.innerHTML = `DURUM: ARAÇ / DOĞUM BEKLENİYOR<br>Kesim aracı veya doğum için zamanı ilerletin.`;
+                } else if (hasPositive) {
+                    DOM.btnAction.classList.add('bg-slate-600', 'opacity-50', 'cursor-not-allowed');
+                    DOM.btnAction.innerHTML = 'Çıkışlar Bekleniyor';
+                    DOM.btnAction.disabled = true;
+                    DOM.statusText.innerHTML = `DURUM: BEKLEME<br>İşletmede pozitif varken test istenemez.`;
+                } else if (cleanDays < 32 && totalTestsCompleted > 0) {
+                    let daysToRequest = 32 - cleanDays;
+                    DOM.btnAction.classList.add('bg-blue-600', 'hover:bg-blue-500');
+                    DOM.btnAction.innerHTML = `<i class="fa-solid fa-forward"></i> İlerle (${daysToRequest} Gün)`;
+                    DOM.btnAction.onclick = () => startTime(day + daysToRequest, 'IDLE');
+                    DOM.statusText.innerHTML = `DURUM: SÜRE BEKLENİYOR<br>Test talebi 32. günde yapılabilir.`;
+                } else {
+                    DOM.btnAction.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                    DOM.btnAction.innerHTML = totalTestsCompleted === 0 ? `<i class="fa-solid fa-syringe"></i> İlk Testi İste` : `<i class="fa-solid fa-syringe"></i> Yeni Test İste`;
+                    DOM.btnAction.onclick = () => {
+                        logEvent("Avian ve Bovine tüberkülin testleri istendi. Ekip bekleniyor...", "text-slate-400");
+                        currentState = STATE.WAITING_TEST_KIT;
+                        startTime(day + Math.floor(Math.random() * 4) + 1, 'TEST_KIT_ARRIVED');
+                    };
+                    DOM.statusText.innerHTML = "DURUM: TEST İSTENEBİLİR<br>Mevzuata uygun süre doldu.";
+                }
+            } 
+            else if (currentState === STATE.WAITING_42_FOR_APPLICATION) {
+                let daysLeft = 42 - cleanDays;
+                DOM.btnAction.classList.add('bg-blue-600', 'hover:bg-blue-500');
+                DOM.btnAction.innerHTML = `<i class="fa-solid fa-forward"></i> İlerle (${daysLeft} Gün)`;
+                DOM.btnAction.onclick = () => startTime(day + daysLeft, 'TEST_APPLICATION_READY');
+                DOM.statusText.innerHTML = `DURUM: BEKLENİYOR<br>Uygulamak için son ${daysLeft} gün.`;
+            }
+            else if (currentState === STATE.QUARANTINE_ALLOCATION) {
+                DOM.btnAction.classList.add('bg-slate-600', 'opacity-50', 'cursor-not-allowed');
+                DOM.btnAction.innerHTML = 'Karantinaya Seçin';
+                DOM.btnAction.disabled = true;
+                DOM.statusText.innerHTML = "DURUM: KARANTİNA İŞLEMİ<br>Riskli hayvanları ayırın!";
+            }
+            else if (currentState === STATE.TEST_APPLICATION) {
+                let unapplied = animals.filter(a => a.age >= TEST_ELIGIBLE_AGE && !a.tested).length;
+                DOM.btnAction.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                DOM.btnAction.innerHTML = `<i class="fa-solid fa-check"></i> Bitir (${unapplied})`;
+                DOM.btnAction.onclick = () => {
+                    if(unapplied > 0) return Swal.fire('Eksik', 'Tüm uygun hayvanlara test uygulayın!', 'warning');
+                    currentState = STATE.WAITING_TEST_READ;
+                    logEvent("Karşılaştırmalı tüberkülin testleri uygulandı. 3 gün bekleniyor.", "text-blue-400");
+                    startTime(day + 3, 'TEST_READ_TIME');
+                };
+                DOM.statusText.innerHTML = "DURUM: TEST UYGULAMA<br>Gri titreyen 42 günden büyük hayvanlara tıklayın.";
+            }
+            else if (currentState === STATE.TEST_READING) {
+                let unread = animals.filter(a => a.age >= TEST_ELIGIBLE_AGE && a.tested && !a.testResult).length;
+                DOM.btnAction.classList.add('bg-purple-600', 'hover:bg-purple-500');
+                DOM.btnAction.innerHTML = `<i class="fa-solid fa-eye"></i> Okumayı Bitir (${unread})`;
+                DOM.btnAction.onclick = () => {
+                    if(unread > 0) return Swal.fire('Eksik', 'Tüm testleri okumalısınız!', 'warning');
+                    
+                    totalTestsCompleted++; 
+                    cleanDays = 0; 
+                    isFirstTest = false;
+                    
+                    let hasRiskToAllocate = animals.some(a => (a.zone === 'MAIN' && (a.testResult === 'POS' || a.testResult === 'SUS')) || (a.zone === 'SUSPECT' && a.testResult === 'POS'));
+                    
+                    if (hasRiskToAllocate) {
+                        currentState = STATE.QUARANTINE_ALLOCATION;
+                        logEvent("Riskli hayvanlar tespit edildi! Karantinaya ayırın.", "text-red-400 font-bold");
+                        
+                        animals.forEach(a => {
+                            if(a.testResult === 'NEG') {
+                                a.hasBeenTestedNegative = true;
+                                a.tested = false; a.testResult = null;
+                                if(a.zone === 'SUSPECT') { a.zone = 'MAIN'; logEvent(`ID:#${a.id} temiz, Sürüye döndü.`, "text-emerald-400"); }
+                            } else if (a.zone === 'SUSPECT' && a.testResult === 'SUS') {
+                                a.tested = false; a.testResult = null;
+                            }
+                        });
+                    } else {
+                        consecutiveNegatives++;  
+                        logEvent(`Test sonucu: TAMAMI NEGATİF. (${consecutiveNegatives}/2)`, "text-emerald-400 font-bold");
+                        currentState = STATE.IDLE;
+                        animals.forEach(a => { 
+                            if(a.testResult === 'NEG') a.hasBeenTestedNegative = true;
+                            a.tested = false; a.testResult = null;
+                            if(a.zone === 'SUSPECT') { a.zone = 'MAIN'; logEvent(`ID:#${a.id} temiz, Sürüye döndü.`, "text-emerald-400"); }
+                        });
+                    }
+                    updateActionState(); renderAnimals(); checkWinCondition();
+                };
+                DOM.statusText.innerHTML = "DURUM: TEST OKUMA<br>Mor titreyenlere tıklayın.";
+            }
+        }
+
+        function renderAnimals() {
+            DOM.zoneMain.innerHTML = ''; DOM.zoneSuspect.innerHTML = ''; DOM.zonePositive.innerHTML = '';
+            let counts = { MAIN: 0, SUSPECT: 0, POSITIVE: 0 };
+            
+            animals.forEach(a => {
+                let card = document.createElement('div');
+                card.className = "animal-card bg-slate-800 p-1 md:p-2 rounded-lg md:rounded-xl border md:border-2 border-slate-600 flex flex-col items-center justify-center w-full relative aspect-square text-center shadow-lg cursor-default select-none";
+                
+                let iconHtml = '<div class="text-3xl md:text-4xl leading-none mb-1">🐄</div>';
+                if (a.age < 42) {
+                    iconHtml = '<div class="text-3xl md:text-4xl leading-none mb-1">🍼</div>';
+                } else if (a.age < 180) {
+                    iconHtml = '<div class="text-3xl md:text-4xl leading-none mb-1">🐮</div>'; 
+                }
+                
+                if (a.pregnant) {
+                    iconHtml += `<span class="absolute top-[-4px] right-[-4px] md:top-[-6px] md:right-[-6px] text-xs md:text-base bg-slate-700/80 rounded-full w-5 h-5 md:w-7 md:h-7 flex items-center justify-center shadow" title="Gebe">🤰</span>`;
+                }
+
+                if (currentState === STATE.TEST_APPLICATION) {
+                    if (a.age >= TEST_ELIGIBLE_AGE && !a.tested) {
+                        card.classList.add('border-slate-400', 'pulse-border-gray', 'cursor-pointer', 'bg-slate-700');
+                        card.onclick = () => { a.tested = true; renderAnimals(); updateActionState(); };
+                    } else if (a.tested) {
+                        card.classList.add('border-blue-500', 'bg-blue-900/40');
+                    } else { card.classList.add('opacity-40', 'grayscale'); }
+                } 
+                else if (currentState === STATE.TEST_READING) {
+                    if (a.tested && !a.testResult) {
+                        card.classList.add('border-purple-500', 'pulse-border-purple', 'cursor-pointer', 'bg-slate-700');
+                        card.onclick = () => {
+                            let rnd = Math.random();
+                            
+                            if (totalTestsCompleted === 0 && a.forcePositiveOnFirstTest) {
+                                a.testResult = rnd < 0.95 ? 'POS' : 'SUS';
+                                a.forcePositiveOnFirstTest = false; 
+                            } 
+                            else {
+                                if (totalTestsCompleted >= 2) {
+                                    if (a.zone === 'MAIN') a.testResult = 'NEG'; 
+                                    else a.testResult = rnd < 0.05 ? 'POS' : (rnd < 0.15 ? 'SUS' : 'NEG');
+                                } else {
+                                    let risk = consecutiveNegatives > 0 ? 0.05 : 0.15;
+                                    a.testResult = rnd < risk * 0.3 ? 'POS' : (rnd < risk ? 'SUS' : 'NEG');
+                                }
+                            }
+                            renderAnimals(); updateActionState();
+                        };
+                    } else if (a.testResult) {
+                        if(a.testResult === 'POS') card.classList.replace('border-slate-600', 'border-red-500');
+                        if(a.testResult === 'SUS') card.classList.replace('border-slate-600', 'border-yellow-500');
+                        if(a.testResult === 'NEG') card.classList.replace('border-slate-600', 'border-emerald-500');
+                        card.classList.add('bg-slate-900/50');
+                    } else { card.classList.add('opacity-40', 'grayscale'); }
+                }
+                else if (currentState === STATE.QUARANTINE_ALLOCATION) {
+                    let needsAllocation = (a.zone === 'MAIN' && (a.testResult === 'POS' || a.testResult === 'SUS')) || (a.zone === 'SUSPECT' && a.testResult === 'POS');
+                    
+                    if (needsAllocation) {
+                        card.classList.add('cursor-pointer', 'z-10');
+                        if(a.testResult === 'POS') card.classList.add('pulse-border-red', 'border-red-500', 'bg-red-900/30');
+                        if(a.testResult === 'SUS') card.classList.add('pulse-border-yellow', 'border-yellow-500', 'bg-yellow-900/30');
+                        
+                        card.onclick = () => {
+                            a.zone = a.testResult === 'POS' ? 'POSITIVE' : 'SUSPECT';
+                            a.tested = false;
+                            a.testResult = null;
+                            
+                            logEvent(`ID:#${a.id} ${a.zone === 'POSITIVE' ? 'Poz.' : 'Şüp.'} Karantinaya Gitti.`, a.zone === 'POSITIVE' ? "text-red-400" : "text-yellow-400");
+                            
+                            let pending = animals.some(x => (x.zone === 'MAIN' && (x.testResult === 'POS' || x.testResult === 'SUS')) || (x.zone === 'SUSPECT' && x.testResult === 'POS'));
+                            
+                            if (!pending) {
+                                currentState = STATE.IDLE;
+                                animals.forEach(x => { x.tested = false; x.testResult = null; });
+                                consecutiveNegatives = 0;
+                                logEvent("Karantina işlemi tamam.", "text-emerald-400 font-bold");
+                            }
+                            updateActionState(); renderAnimals();
+                        };
+                    } else { card.classList.add('opacity-40', 'grayscale'); }
+                }
+                else if (currentState === STATE.IDLE) {
+                    if (a.zone === 'POSITIVE') card.classList.replace('border-slate-600', 'border-red-500');
+                    if (a.zone === 'SUSPECT') card.classList.replace('border-slate-600', 'border-yellow-500');
+                    
+                    if (a.zone === 'POSITIVE' && !a.slaughterDay && !a.waitingBirthForSlaughter) {
+                        card.classList.add('cursor-pointer', 'bg-red-900/30', 'pulse-border-red');
+                        card.onclick = () => handleSlaughterAppointment(a);
+                    }
+                    
+                    if (a.zone === 'MAIN' && !a.slaughterDay && !a.waitingBirthForSlaughter) {
+                         card.classList.add('cursor-pointer', 'hover:bg-slate-700');
+                         card.onclick = () => handleVoluntarySlaughter(a);
+                    }
+                }
+
+                let tagsHtml = '';
+                
+                if (a.pregnant && !a.waitingBirthForSlaughter) {
+                    tagsHtml += `<div class="text-[7px] md:text-[9px] font-bold text-pink-400 mt-1 bg-pink-900/30 px-0.5 md:px-1 rounded border border-pink-700/50 leading-none py-0.5 w-full">Kalan:${a.daysToBirth}</div>`;
+                }
+                
+                if (a.slaughterDay) {
+                    let remaining = a.slaughterDay - day;
+                    tagsHtml += `<div class="text-[8px] md:text-[9px] font-bold text-white bg-red-600 px-1 py-0.5 mt-1 rounded shadow leading-none w-full">Kesime: ${remaining} G</div>`;
+                } else if (a.waitingBirthForSlaughter) {
+                    tagsHtml += `<div class="text-[7px] md:text-[9px] font-bold text-white bg-orange-600 px-0.5 md:px-1 py-0.5 mt-1 rounded shadow leading-none w-full">Doğum B. (${a.daysToBirth}G)</div>`;
+                }
+
+                let textHtml = `
+                    ${iconHtml}
+                    <div class="flex flex-col items-center w-full px-1">
+                        <div class="text-[8px] md:text-[10px] text-slate-400 mt-0.5 md:mt-1 font-mono leading-none">ID:#${a.id}</div>
+                        <div class="text-[8px] md:text-[10px] font-bold text-slate-300 leading-none mt-0.5">${a.age} G</div>
+                        ${tagsHtml}
+                    </div>
+                `;
+                card.innerHTML = textHtml;
+                
+                if (a.zone === 'MAIN') { DOM.zoneMain.appendChild(card); counts.MAIN++; }
+                else if (a.zone === 'SUSPECT') { DOM.zoneSuspect.appendChild(card); counts.SUSPECT++; }
+                else if (a.zone === 'POSITIVE') { DOM.zonePositive.appendChild(card); counts.POSITIVE++; }
+            });
+            
+            DOM.countMain.innerText = `${counts.MAIN} Baş`;
+            DOM.countSuspect.innerText = `${counts.SUSPECT}`;
+            DOM.countPositive.innerText = `${counts.POSITIVE}`;
+        }
+        
+        function handleVoluntarySlaughter(a) {
+             if (a.age < 360 || a.pregnant) {
+                 Swal.fire({
+                    title: 'Uygun Değil',
+                    text: `Buzağılar ve gebe hayvanlar isteğe bağlı kesime gönderilemez. (Hayvan ${a.age < 360 ? '1 yaşından küçük' : 'gebe'})`,
+                    icon: 'warning',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+             }
+             
+             if (!a.hasBeenTestedNegative) {
+                 Swal.fire({
+                    title: 'Test Gerekli',
+                    text: `Test yapılmadan isteğe bağlı kesime hayvan gönderilemez. Önce bu hayvanın test edilip negatif olduğundan emin olunmalıdır.`,
+                    icon: 'warning',
+                    confirmButtonText: 'Tamam'
+                });
+                return;
+             }
+
+             Swal.fire({
+                title: 'İsteğe Bağlı Kesim',
+                text: `ID:#${a.id} numaralı negatif hayvanı kendi isteğiyle en yakın mezbahaya kesime sevk etmek istiyor musunuz? (Kesim yarın gerçekleşecek)`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Evet, Kesime Gönder',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    a.slaughterDay = day + 1;
+                    a.slaughterType = 'VOLUNTARY';
+                    updateActionState(); renderAnimals();
+                }
+            });
+        }
+
+        function handleSlaughterAppointment(a) {
+            Swal.fire({
+                title: 'Şarta Tabi Kesim Randevusu',
+                text: `ID:#${a.id} için öncelikle Et ve Süt Kurumundan, olmazsa en iyi teklif veren yerden şarta tabi kesim randevusu alınsın mı?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Randevu Al'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let existingSlaughter = animals.find(x => x.slaughterDay && x.slaughterDay > day && !x.waitingBirthForSlaughter && x.slaughterType === 'CONDITIONAL');
+                    let delay = existingSlaughter ? (existingSlaughter.slaughterDay - day) : (Math.floor(Math.random() * 7) + 1);
+                    
+                    if (a.pregnant && a.daysToBirth <= 90) {
+                        Swal.fire({
+                            title: 'Gebe Hayvan İstisnası',
+                            text: `Bu hayvan gebe ve doğuma ${a.daysToBirth} gün var. Kesim doğuma kadar uzatılsın mı?`,
+                            icon: 'info',
+                            showCancelButton: true,
+                            confirmButtonText: 'Uzat (Doğumu Bekle)',
+                            cancelButtonText: 'Hayır, Normal Sevk'
+                        }).then((pregResult) => {
+                            if(pregResult.isConfirmed) {
+                                a.waitingBirthForSlaughter = true;
+                                a.slaughterType = 'CONDITIONAL';
+                                logEvent(`ID:#${a.id} kesimi DOĞUM SONRASINA ertelendi.`, "text-blue-400");
+                            } else {
+                                a.slaughterDay = day + delay;
+                                a.slaughterType = 'CONDITIONAL';
+                            }
+                            updateActionState(); renderAnimals();
+                        });
+                    } else {
+                        a.slaughterDay = day + delay;
+                        a.slaughterType = 'CONDITIONAL';
+                        updateActionState(); renderAnimals();
+                    }
+                }
+            });
+        }
+        
+        function triggerGameOver(emptyHerd = false) {
+             currentState = STATE.GAME_OVER;
+             clearInterval(timeInterval);
+             
+             DOM.btnAction.disabled = true;
+             DOM.btnAction.className = "w-full bg-slate-600 text-slate-300 font-bold py-2 md:py-3 px-2 md:px-4 rounded shadow-lg flex items-center justify-center gap-1.5 md:gap-2 opacity-50 cursor-not-allowed text-xs md:text-base";
+             DOM.btnAction.innerHTML = '<i class="fa-solid fa-lock"></i> Oyun Bitti';
+             
+             if(emptyHerd) {
+                 DOM.statusText.innerHTML = `DURUM: HASTALIK SÖNDÜRÜLDÜ<br>İşletmede hayvan kalmadı.`;
+                 document.querySelector('#endgame-tasks-view p').innerText = "İşletmede hayvan kalmadığı için hastalık söndürülmüştür. Son idari işlemleri tamamlayın:";
+             } else {
+                 DOM.statusText.innerHTML = `DURUM: HASTALIK SÖNDÜRÜLDÜ<br>Sönüş işlemlerini tamamlayın.`;
+             }
+             
+             document.getElementById('endgame-modal').classList.remove('hidden');
+             document.getElementById('endgame-modal').classList.add('flex');
+             setupEndgameTasks();
+        }
+        
+        function checkWinCondition() {
+            if (currentState === STATE.GAME_OVER) return; 
+            
+            if (consecutiveNegatives >= 2 && !animals.some(a => a.zone === 'POSITIVE' || a.zone === 'SUSPECT')) {
+                triggerGameOver(false);
+            }
+        }
+
+        document.getElementById('btn-fullscreen').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+        initGame();
+    </script>
+</body>
+</html>
